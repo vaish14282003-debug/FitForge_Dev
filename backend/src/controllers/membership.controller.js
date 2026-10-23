@@ -168,7 +168,7 @@ async function cancelMembership(req, res) {
 async function getRoster(req, res) {
   const today = dayKey(new Date(), req.valid.query.tz);
   const [members, memberships] = await Promise.all([
-    User.find({ gym: req.user.gym, role: ROLES.MEMBER }).select('name email isActive createdAt').sort({ name: 1 }),
+    User.find({ gym: req.user.gym, role: ROLES.MEMBER }).select('name email isActive createdAt avatarKey').sort({ name: 1 }),
     Membership.find({ gym: req.user.gym }).sort({ startDate: -1 }).lean(),
   ]);
   const byMember = new Map();

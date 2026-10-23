@@ -6,8 +6,8 @@ const { ROLES, PERMISSIONS, can } = require('../config/roles');
 const { visibleTo } = require('./exercise.controller');
 
 const POPULATE = [
-  { path: 'days.exercises.exercise', select: 'name muscleGroup equipment imageUrl instructions' },
-  { path: 'assignedTo', select: 'name email' },
+  { path: 'days.exercises.exercise', select: 'name muscleGroup equipment imageKey instructions' },
+  { path: 'assignedTo', select: 'name email avatarKey' },
   { path: 'createdBy', select: 'name' },
 ];
 

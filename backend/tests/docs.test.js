@@ -5,7 +5,7 @@ const openapi = require('../src/docs/openapi');
 // Walks the Express router so a new route without docs fails this test.
 function mountedRoutes() {
   const routes = [];
-  const prefixes = { auth: '/auth', users: '/users', gym: '/gym', exercises: '/exercises', plans: '/plans', sessions: '/sessions', progress: '/progress', attendance: '/attendance', membershipPlans: '/membership-plans', memberships: '/memberships' };
+  const prefixes = { auth: '/auth', users: '/users', gym: '/gym', exercises: '/exercises', plans: '/plans', sessions: '/sessions', progress: '/progress', attendance: '/attendance', membershipPlans: '/membership-plans', memberships: '/memberships', files: '/files' };
   const apiRouter = require('../src/routes');
   for (const layer of apiRouter.stack) {
     if (layer.route) {
@@ -14,7 +14,7 @@ function mountedRoutes() {
       const prefix = Object.values(prefixes).find((p) => layer.matchers?.[0]?.(p) || String(layer.regexp).includes(p.slice(1)));
       for (const sub of layer.handle.stack) {
         if (!sub.route) continue;
-        const path = `${prefix}${sub.route.path === '/' ? '' : sub.route.path}`.replace(/:(\w+)/g, '{$1}');
+        const path = `${prefix}${sub.route.path === '/' ? '' : sub.route.path}`.replace(/[:*](\w+)/g, '{$1}');
         Object.keys(sub.route.methods).forEach((m) => routes.push(`${m} ${path}`));
       }
     }

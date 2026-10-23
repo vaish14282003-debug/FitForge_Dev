@@ -227,7 +227,7 @@ export function WorkoutLogger({ plan, dayIndex }: { plan: WorkoutPlan; dayIndex:
               )}
             >
               <div className="flex items-start gap-3">
-                <MuscleIconTile group={planned.exercise.muscleGroup} />
+                <MuscleIconTile group={planned.exercise.muscleGroup} imageUrl={planned.exercise.imageUrl} />
                 <div className="min-w-0 flex-1">
                   <h2 className="font-semibold">{planned.exercise.name}</h2>
                   <p className="text-sm text-muted-foreground">

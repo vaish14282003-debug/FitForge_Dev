@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ChartLine, ClipboardList, CreditCard, Dumbbell, History, LayoutDashboard, Library, LogOut, ScanLine, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useLogout, useSession } from "@/hooks/use-session";
 import { ROLE_HOME, ROLE_LABEL, can, canVisit } from "@/lib/access";
@@ -30,13 +31,6 @@ const NAV: NavItem[] = [
   { href: "/front-desk", label: "Front desk", icon: ScanLine },
 ];
 
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
 
 // Red light behind every signed-in page, echoing the landing hero.
 function Backdrop() {
@@ -118,15 +112,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-3 rounded-full py-1 pr-1 pl-1 sm:flex">
-              <span className="grid size-9 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-accent-text ring-1 ring-primary/30">
-                {initials(user.name)}
-              </span>
-              <div className="leading-tight">
+            <Link
+              href="/profile"
+              aria-label="Your profile"
+              className="flex items-center gap-3 rounded-full py-1 pr-1 pl-1 transition hover:bg-white/5 sm:pr-3"
+            >
+              <Avatar name={user.name} src={user.avatarUrl} />
+              <div className="hidden leading-tight sm:block">
                 <p className="max-w-36 truncate text-sm font-semibold">{user.name}</p>
                 <p className="text-xs text-muted-foreground">{ROLE_LABEL[user.role]}</p>
               </div>
-            </div>
+            </Link>
             <Button
               size="sm"
               loading={logout.isPending}

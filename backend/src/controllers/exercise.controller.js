@@ -1,5 +1,6 @@
 const Exercise = require('../models/Exercise');
 const ApiError = require('../utils/ApiError');
+const { saveImage, removeQuietly } = require('../storage');
 
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -28,4 +29,16 @@ async function createExercise(req, res) {
   res.status(201).json({ exercise });
 }
 
-module.exports = { listExercises, createExercise, visibleTo };
+// Only a gym's own exercises take photos; the built-in library is shared by every gym.
+async function uploadExerciseImage(req, res) {
+  const exercise = await Exercise.findOne({ _id: req.valid.params.id, gym: req.user.gym });
+  if (!exercise) throw ApiError.notFound('Exercise not found among your gym\'s own exercises');
+  const key = await saveImage(req.file, { gymId: req.user.gym, folder: 'exercises', size: 1200 });
+  const previous = exercise.imageKey;
+  exercise.imageKey = key;
+  await exercise.save();
+  await removeQuietly(previous);
+  res.json({ exercise });
+}
+
+module.exports = { listExercises, createExercise, uploadExerciseImage, visibleTo };

@@ -14,7 +14,9 @@ export type Permission =
   | "workout:log"
   | "memberships:manage";
 
-export type UserRef = { id: string; name: string; email: string };
+export type UserRef = { id: string; name: string; email: string; avatarUrl?: string | null };
+
+export type FitnessGoal = "LOSE_WEIGHT" | "BUILD_MUSCLE" | "GET_STRONGER" | "IMPROVE_FITNESS" | "STAY_HEALTHY";
 
 export type User = {
   id: string;
@@ -24,6 +26,11 @@ export type User = {
   gym: string;
   trainer: UserRef | null;
   avatarUrl: string | null;
+  phone: string;
+  bio: string;
+  heightCm: number | null;
+  dateOfBirth: string | null;
+  fitnessGoal: FitnessGoal | null;
   isActive: boolean;
   createdAt: string;
 };
@@ -219,7 +226,7 @@ export type Membership = {
 export type Standing = "ACTIVE" | "EXPIRING" | "UPCOMING" | "EXPIRED" | "NONE";
 
 export type RosterEntry = {
-  member: { id: string; name: string; email: string; isActive: boolean };
+  member: { id: string; name: string; email: string; isActive: boolean; avatarUrl: string | null };
   status: Standing;
   current: Membership | null;
   upcoming: Membership | null;

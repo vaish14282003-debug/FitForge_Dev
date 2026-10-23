@@ -72,7 +72,7 @@ export function PlanDayView({ days, action }: { days: PlanDay[]; action?: (dayIn
                 className="flex w-full flex-wrap items-center gap-x-4 gap-y-3 p-4 text-left sm:p-5"
               >
                 <span className="font-display hidden w-6 text-center text-xl font-semibold text-muted-foreground sm:block">{i + 1}</span>
-                <MuscleIconTile group={item.exercise.muscleGroup} />
+                <MuscleIconTile group={item.exercise.muscleGroup} imageUrl={item.exercise.imageUrl} />
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold">{item.exercise.name}</span>
                   <span className="mt-1 flex flex-wrap gap-1.5">

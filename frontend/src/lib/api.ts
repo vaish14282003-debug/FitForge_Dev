@@ -25,6 +25,8 @@ function refreshSession() {
 type Options = { method?: string; body?: unknown };
 
 async function send(path: string, { method = "GET", body }: Options) {
+  // File uploads go as multipart; the browser sets that content type with its boundary.
+  if (body instanceof FormData) return fetch(`/api${path}`, { method, body });
   return fetch(`/api${path}`, {
     method,
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },

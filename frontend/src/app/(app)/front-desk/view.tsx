@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Expand, Pencil, Search, UserCheck, Wifi } from "lucide-react";
 import { PageHeader } from "@/components/stat-card";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -271,9 +272,7 @@ function ManualCheckIn({ checkedInIds }: { checkedInIds: Set<string> }) {
             const done = checkedInIds.has(m.id);
             return (
               <li key={m.id} className="flex items-center gap-3 rounded-2xl px-2 py-2">
-                <span className="grid size-9 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-accent-text">
-                  {m.name.charAt(0).toUpperCase()}
-                </span>
+                <Avatar name={m.name} src={m.avatarUrl} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{m.name}</span>
                   <span className="block truncate text-xs text-muted-foreground">{m.email}</span>
@@ -351,9 +350,7 @@ export default function FrontDesk() {
                       transition={{ duration: 0.6 }}
                       className="flex items-center gap-3 rounded-2xl px-2 py-2"
                     >
-                      <span className="grid size-9 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-accent-text">
-                        {c.member.name.charAt(0).toUpperCase()}
-                      </span>
+                      <Avatar name={c.member.name} src={c.member.avatarUrl} />
                       <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.member.name}</span>
                       <span className={cn("rounded-full px-2 py-0.5 text-xs", c.method === "QR" ? "bg-white/[0.06] text-muted-foreground" : "bg-primary/15 text-accent-text")}>
                         {c.method === "QR" ? "QR" : "Desk"}

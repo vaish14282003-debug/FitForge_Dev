@@ -34,5 +34,6 @@ export const config = {
     "/check-in/:path*",
     "/front-desk/:path*",
     "/memberships/:path*",
+    "/profile/:path*",
   ],
 };

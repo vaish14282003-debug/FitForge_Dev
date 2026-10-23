@@ -105,7 +105,7 @@ async function listSessions(req, res) {
   if (pendingReview) filter['review.reviewedAt'] = null;
 
   const sessions = await WorkoutSession.find(filter)
-    .populate('member', 'name email')
+    .populate('member', 'name email avatarKey')
     .populate('review.reviewedBy', 'name')
     .sort({ completedAt: -1 })
     .limit(limit);
@@ -114,7 +114,7 @@ async function listSessions(req, res) {
 
 async function getSession(req, res) {
   const session = await WorkoutSession.findOne({ _id: req.valid.params.id, ...(await scopeFor(req.user)) })
-    .populate('member', 'name email')
+    .populate('member', 'name email avatarKey')
     .populate('review.reviewedBy', 'name');
   if (!session) throw ApiError.notFound('Workout not found');
   res.json({ session });

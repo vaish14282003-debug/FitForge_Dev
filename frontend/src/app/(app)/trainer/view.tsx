@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CalendarClock, ChevronRight, ClipboardCheck, ClipboardList, Users } from "lucide-react";
 import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
+import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { ReviewQueue } from "@/components/workouts/review-queue";
 import { useClients } from "@/hooks/use-gym";
@@ -55,9 +56,7 @@ export default function TrainerDashboard() {
                   href={`/clients/${client.id}`}
                   className="group flex items-center gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-white/[0.04]"
                 >
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-accent-text">
-                  {client.name.charAt(0).toUpperCase()}
-                </span>
+                <Avatar name={client.name} src={client.avatarUrl} />
                 <span className="font-medium">{client.name}</span>
                 <span className="ml-auto hidden truncate text-sm text-muted-foreground sm:block">{client.email}</span>
                 <span className="text-sm text-muted-foreground transition group-hover:text-foreground">Progress</span>

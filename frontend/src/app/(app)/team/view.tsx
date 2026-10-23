@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Users } from "lucide-react";
 import { FormError } from "@/components/auth/auth-card";
+import { Avatar } from "@/components/ui/avatar";
 import { EmptyState, PageHeader } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -195,9 +196,7 @@ export default function TeamPage() {
                 <tr key={user.id} className="transition-colors hover:bg-white/[0.03]">
                   <td className="px-6 py-4">
                     <span className="flex items-center gap-3 font-medium">
-                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-accent-text">
-                        {user.name.charAt(0).toUpperCase()}
-                      </span>
+                      <Avatar name={user.name} src={user.avatarUrl} />
                       {tab.role === "MEMBER" && canSeeProgress ? (
                         <Link href={`/clients/${user.id}`} className="underline-offset-4 hover:text-accent-text hover:underline">
                           {user.name}

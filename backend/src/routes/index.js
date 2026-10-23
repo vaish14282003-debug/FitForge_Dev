@@ -14,5 +14,6 @@ router.use('/attendance', require('./attendance.routes'));
 const membershipRoutes = require('./membership.routes');
 router.use('/membership-plans', membershipRoutes.plans);
 router.use('/memberships', membershipRoutes.memberships);
+router.use('/files', require('./file.routes'));
 
 module.exports = router;

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Archive, BadgeIndianRupee, CalendarClock, CreditCard, History, Pencil, Plus, RotateCcw, Search, Users } from "lucide-react";
 import { HistoryDialog, MarkPaidDialog, PlanDialog } from "@/components/memberships/membership-dialogs";
+import { Avatar } from "@/components/ui/avatar";
 import { SellDialog } from "@/components/memberships/sell-dialog";
 import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
@@ -134,9 +135,7 @@ function MembersTab() {
                 transition={{ delay: Math.min(i, 10) * 0.03 }}
                 className="flex flex-wrap items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl sm:p-5"
               >
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/15 font-semibold text-accent-text">
-                  {entry.member.name.charAt(0).toUpperCase()}
-                </span>
+                <Avatar name={entry.member.name} src={entry.member.avatarUrl} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="truncate font-semibold">{entry.member.name}</span>

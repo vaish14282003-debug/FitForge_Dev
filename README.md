@@ -37,7 +37,26 @@ Fitness tracking and gym management for members, trainers and gym owners.
   (expiring, expired, no membership, payment due). Owners see monthly revenue and a 6-month chart;
   members see their membership and a reminder when it's about to end.
 
-Scheduling and uploads are not built yet.
+- **Profiles and uploads** (step 6): everyone has a profile page (photo, phone, and for members
+  height, date of birth and goal; for trainers a bio) and can change their password, which signs out
+  other devices. Photos appear across the app. Gyms can add photos to their own exercises. Uploads
+  are checked to be real images, resized and saved as WebP, and only served to people in the same gym.
+
+Scheduling and notifications are not built yet.
+
+### File storage
+
+Uploads go to `backend/uploads/` by default. To use S3 instead, set in `backend/.env`:
+
+```
+STORAGE_DRIVER=s3
+AWS_REGION=ap-south-1
+AWS_S3_BUCKET=your-bucket
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+```
+
+The bucket stays private: the API checks the viewer's gym and redirects to a 5-minute signed link.
 Dashboard cards for those say "Coming soon".
 
 ### How people get accounts
@@ -127,6 +146,10 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | POST | `/api/memberships`, `/:id/renew`, `/:id/cancel` | `memberships:manage` |
 | PATCH | `/api/memberships/:id/payment` | `memberships:manage` |
 | GET | `/api/memberships/me` | `workout:log` (members) |
+| POST, DELETE | `/api/users/me/avatar` | Signed in (own photo) |
+| POST | `/api/users/me/password` | Signed in |
+| POST | `/api/exercises/:id/image` | `workout:create` (gym's own exercises) |
+| GET | `/api/files/*` | Signed in, same gym as the file |
 
 ## Tech stack: what each piece does here
 
@@ -156,6 +179,8 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | RBAC map | `src/config/roles.js` says which role has which permission; `authorize()` checks it per route. |
 | Helmet, CORS, rate limiting | Security headers, cross-origin rules, and slowing down password guessing. |
 | Winston | Logging. |
+| Multer + sharp | Receive uploads and turn them into resized, metadata-free WebP images. |
+| AWS SDK (S3) | Stores files in S3 and creates signed links when `STORAGE_DRIVER=s3`. |
 | Swagger UI | Live API docs at `/api/docs`, from `src/docs/openapi.js`. |
 | Jest + Supertest + mongodb-memory-server | Tests that call the real API against a throwaway in-memory database. |
 

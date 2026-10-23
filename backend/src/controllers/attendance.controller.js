@@ -107,7 +107,7 @@ async function getStats(req, res) {
       { $match: { gym: req.user.gym, day: { $gte: from } } },
       { $group: { _id: '$day', count: { $sum: 1 } } },
     ]),
-    Attendance.find({ gym: req.user.gym, day: today }).populate('member', 'name email').sort({ checkedInAt: -1 }).limit(200),
+    Attendance.find({ gym: req.user.gym, day: today }).populate('member', 'name email avatarKey').sort({ checkedInAt: -1 }).limit(200),
   ]);
 
   const counts = new Map(daily.map((d) => [d._id, d.count]));

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, Reorder, motion, useDragControls } from "framer-motion";
 import { Check, Clock, Dumbbell, GripVertical, Layers, Plus, Trash2, Users, X } from "lucide-react";
 import { FormError } from "@/components/auth/auth-card";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -152,7 +153,7 @@ function ExerciseRow({
         >
           <GripVertical className="size-5" aria-hidden />
         </button>
-        <MuscleIconTile group={item.exercise.muscleGroup} className="size-10" />
+        <MuscleIconTile group={item.exercise.muscleGroup} imageUrl={item.exercise.imageUrl} className="size-10" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">
             <span className="mr-2 text-muted-foreground">{index + 1}.</span>
@@ -224,9 +225,7 @@ function AssignPanel({ selected, onToggle }: { selected: Set<string>; onToggle: 
                   )}
                 >
                   <input type="checkbox" className="sr-only" checked={checked} onChange={() => onToggle(person.id)} />
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-accent-text">
-                    {person.name.charAt(0).toUpperCase()}
-                  </span>
+                  <Avatar name={person.name} src={person.avatarUrl} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{person.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">{person.email}</span>

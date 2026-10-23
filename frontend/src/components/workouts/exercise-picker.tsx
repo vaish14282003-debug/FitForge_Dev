@@ -43,7 +43,7 @@ export function ExercisePicker({ open, onClose, onPick, pickedIds, dayName }: Ex
                     picked ? "border-primary/40 bg-primary/10" : "border-transparent hover:bg-white/[0.05]",
                   )}
                 >
-                  <MuscleIconTile group={exercise.muscleGroup} className="size-10" />
+                  <MuscleIconTile group={exercise.muscleGroup} imageUrl={exercise.imageUrl} className="size-10" />
                   <span className="min-w-0 flex-1 space-y-1.5">
                     <span className="block truncate font-medium">{exercise.name}</span>
                     <ExerciseMeta exercise={exercise} />

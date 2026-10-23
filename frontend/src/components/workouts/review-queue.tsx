@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { CircleCheck, MessageSquarePlus } from "lucide-react";
 import { FormError } from "@/components/auth/auth-card";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -105,9 +106,7 @@ export function ReviewQueue({ sessions, loading }: { sessions: WorkoutSession[] 
               transition={{ delay: i * 0.04 }}
               className="flex flex-wrap items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl sm:p-5"
             >
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/15 font-semibold text-accent-text">
-                {session.member.name.charAt(0).toUpperCase()}
-              </span>
+              <Avatar name={session.member.name} src={session.member.avatarUrl} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">
                   {session.member.name} <span className="font-normal text-muted-foreground">· {session.dayName}</span>

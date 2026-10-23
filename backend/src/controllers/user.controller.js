@@ -3,6 +3,14 @@ const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const { ROLES, PERMISSIONS, can } = require('../config/roles');
 const { BCRYPT_ROUNDS } = require('./auth.controller');
+const RefreshToken = require('../models/RefreshToken');
+const { saveImage, removeQuietly } = require('../storage');
+const { setAuthCookies } = require('../utils/tokens');
+
+const AVATAR_SIZE = 512;
+
+// Profile responses carry the trainer as a person, matching what /auth/me returns.
+const withTrainer = (user) => user.populate('trainer', 'name email avatarKey');
 
 // Which account roles the caller is allowed to list or create.
 function manageableRoles(role) {
@@ -15,7 +23,36 @@ function manageableRoles(role) {
 async function updateMe(req, res) {
   Object.assign(req.user, req.valid.body);
   await req.user.save();
-  res.json({ user: req.user });
+  res.json({ user: await withTrainer(req.user) });
+}
+
+async function uploadAvatar(req, res) {
+  const key = await saveImage(req.file, { gymId: req.user.gym, folder: 'avatars', size: AVATAR_SIZE });
+  const previous = req.user.avatarKey;
+  req.user.avatarKey = key;
+  await req.user.save();
+  await removeQuietly(previous);
+  res.json({ user: await withTrainer(req.user) });
+}
+
+async function removeAvatar(req, res) {
+  const previous = req.user.avatarKey;
+  req.user.avatarKey = null;
+  await req.user.save();
+  await removeQuietly(previous);
+  res.json({ user: await withTrainer(req.user) });
+}
+
+// Signs out every other device, then starts a fresh session here so this one stays signed in.
+async function changePassword(req, res) {
+  const { currentPassword, newPassword } = req.valid.body;
+  const user = await User.findById(req.user._id).select('+passwordHash');
+  if (!(await bcrypt.compare(currentPassword, user.passwordHash))) throw ApiError.badRequest('Your current password is not correct');
+  user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+  await user.save();
+  await RefreshToken.updateMany({ user: user._id, revokedAt: null }, { revokedAt: new Date() });
+  await setAuthCookies(res, user);
+  res.status(204).end();
 }
 
 async function listUsers(req, res) {
@@ -24,7 +61,7 @@ async function listUsers(req, res) {
   if (role && !allowed.includes(role)) throw ApiError.forbidden();
 
   const users = await User.find({ gym: req.user.gym, role: role || { $in: allowed } })
-    .populate('trainer', 'name email')
+    .populate('trainer', 'name email avatarKey')
     .sort({ createdAt: -1 });
   res.json({ users });
 }
@@ -50,7 +87,7 @@ async function listClients(req, res) {
   if (req.user.role === ROLES.TRAINER) filter.trainer = req.user._id;
   else filter.trainer = { $ne: null };
 
-  const clients = await User.find(filter).populate('trainer', 'name email').sort({ name: 1 });
+  const clients = await User.find(filter).populate('trainer', 'name email avatarKey').sort({ name: 1 });
   res.json({ clients });
 }
 
@@ -68,8 +105,8 @@ async function assignTrainer(req, res) {
 
   member.trainer = trainerId;
   await member.save();
-  await member.populate('trainer', 'name email');
+  await member.populate('trainer', 'name email avatarKey');
   res.json({ user: member });
 }
 
-module.exports = { updateMe, listUsers, createUser, listClients, assignTrainer };
+module.exports = { updateMe, uploadAvatar, removeAvatar, changePassword, listUsers, createUser, listClients, assignTrainer };

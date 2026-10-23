@@ -12,7 +12,7 @@ const BCRYPT_ROUNDS = 12;
 const DUMMY_HASH = bcrypt.hashSync('fitforge-dummy-password', BCRYPT_ROUNDS);
 
 async function sessionPayload(user) {
-  await user.populate('trainer', 'name email');
+  await user.populate('trainer', 'name email avatarKey');
   return { user, permissions: permissionsFor(user.role) };
 }
 

@@ -5,8 +5,14 @@ import type { Exercise, MuscleGroup } from "@/lib/types";
 import { MUSCLE_GROUPS, MUSCLE_ICONS, equipmentLabel, muscleLabel } from "@/lib/workout";
 import { cn } from "@/lib/utils";
 
-export function MuscleIconTile({ group, className }: { group: MuscleGroup; className?: string }) {
+export function MuscleIconTile({ group, className, imageUrl }: { group: MuscleGroup; className?: string; imageUrl?: string | null }) {
   const Icon = MUSCLE_ICONS[group];
+  if (imageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- served by our API with auth cookies
+      <img src={imageUrl} alt="" loading="lazy" className={cn("size-11 shrink-0 rounded-2xl object-cover ring-1 ring-white/10", className)} />
+    );
+  }
   return (
     <span
       className={cn(

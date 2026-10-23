@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ClipboardList, Clock, Dumbbell, Layers, Library, Plus } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/stat-card";
+import { Avatar } from "@/components/ui/avatar";
 import { buttonClass } from "@/components/ui/button";
 import { Tag } from "@/components/workouts/exercise-bits";
 import { useSession } from "@/hooks/use-session";
@@ -11,19 +12,14 @@ import { usePlans } from "@/hooks/use-workouts";
 import { can } from "@/lib/access";
 import { estimateMinutes } from "@/lib/workout";
 
-function Avatars({ people }: { people: { id: string; name: string }[] }) {
+function Avatars({ people }: { people: { id: string; name: string; avatarUrl?: string | null }[] }) {
   if (people.length === 0) return <span className="text-sm text-muted-foreground">Not assigned yet</span>;
   const shown = people.slice(0, 4);
   return (
     <span className="flex items-center">
       {shown.map((p, i) => (
-        <span
-          key={p.id}
-          title={p.name}
-          className="grid size-8 place-items-center rounded-full bg-[#2a1312] text-xs font-semibold text-accent-text ring-2 ring-background"
-          style={{ marginLeft: i === 0 ? 0 : -8 }}
-        >
-          {p.name.charAt(0).toUpperCase()}
+        <span key={p.id} title={p.name} style={{ marginLeft: i === 0 ? 0 : -8 }}>
+          <Avatar name={p.name} src={p.avatarUrl} className="size-8 text-xs ring-2 ring-background" />
         </span>
       ))}
       <span className="ml-2 text-sm text-muted-foreground">

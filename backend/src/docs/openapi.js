@@ -41,6 +41,7 @@ module.exports = {
     { name: 'Sessions', description: 'Logged workouts, PRs, streaks and trainer reviews' },
     { name: 'Progress', description: 'Body weight and measurements, goals, strength and volume over time' },
     { name: 'Memberships', description: 'Plans and prices, selling and renewing memberships, payments and revenue' },
+    { name: 'Files', description: 'Uploaded images, served only within the owning gym' },
     { name: 'Attendance', description: 'Front-desk QR check-in, manual check-in, visit history and daily counts' },
   ],
   components: {
@@ -77,7 +78,12 @@ module.exports = {
           role: ref('Role'),
           gym: { type: 'string' },
           trainer: { allOf: [ref('UserRef')], nullable: true },
-          avatarUrl: { type: 'string', nullable: true },
+          avatarUrl: { type: 'string', nullable: true, example: '/api/files/gyms/…/avatars/….webp' },
+          phone: { type: 'string', example: '+91 98765 43210' },
+          bio: { type: 'string' },
+          heightCm: { type: 'integer', nullable: true, example: 168 },
+          dateOfBirth: { type: 'string', nullable: true, example: '1999-04-12' },
+          fitnessGoal: { type: 'string', nullable: true, enum: ['LOSE_WEIGHT', 'BUILD_MUSCLE', 'GET_STRONGER', 'IMPROVE_FITNESS', 'STAY_HEALTHY'] },
           isActive: { type: 'boolean' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
@@ -412,10 +418,20 @@ module.exports = {
       patch: {
         tags: ['Users'],
         summary: 'Update your own profile',
-        description: 'Needs `profile:update:own` (every role). Role and gym cannot be changed here.',
+        description: 'Needs `profile:update:own` (every role). Role, email and gym cannot be changed here.',
         requestBody: {
           required: true,
-          content: json({ type: 'object', properties: { name: { type: 'string', example: 'Vaishnavi R.' } } }),
+          content: json({
+            type: 'object',
+            properties: {
+              name: { type: 'string', example: 'Vaishnavi R.' },
+              phone: { type: 'string', example: '+91 98765 43210' },
+              bio: { type: 'string', example: 'Strength coach, 6 years' },
+              heightCm: { type: 'integer', nullable: true, example: 168 },
+              dateOfBirth: { type: 'string', nullable: true, example: '1999-04-12' },
+              fitnessGoal: { type: 'string', nullable: true, enum: ['LOSE_WEIGHT', 'BUILD_MUSCLE', 'GET_STRONGER', 'IMPROVE_FITNESS', 'STAY_HEALTHY'] },
+            },
+          }),
         },
         responses: {
           200: { description: 'Updated', content: json({ type: 'object', properties: { user: ref('User') } }) },
@@ -1168,6 +1184,65 @@ module.exports = {
         description: 'Needs `workout:log` (members).',
         parameters: [{ name: 'tz', in: 'query', schema: { type: 'integer', example: -330 }, description: 'Browser timezone offset (minutes)' }],
         responses: { 200: { description: 'Your membership', content: json({ type: 'object', properties: { status: { type: 'string' }, current: { allOf: [ref('Membership')], nullable: true }, history: { type: 'array', items: ref('Membership') } } }) }, 401: unauthorized, 403: forbidden },
+      },
+    },
+
+    '/users/me/avatar': {
+      post: {
+        tags: ['Users'],
+        summary: 'Upload or replace your profile photo',
+        description: 'JPG, PNG or WebP up to 5 MB. Cropped to a 512 px square and stored as WebP; metadata (e.g. GPS) is removed.',
+        requestBody: {
+          required: true,
+          content: { 'multipart/form-data': { schema: { type: 'object', required: ['avatar'], properties: { avatar: { type: 'string', format: 'binary', description: 'Image file' } } } } },
+        },
+        responses: { 200: { description: 'Updated', content: json({ type: 'object', properties: { user: ref('User') } }) }, 400: errorResponse('Not an image, wrong type, or over 5 MB'), 401: unauthorized },
+      },
+      delete: {
+        tags: ['Users'],
+        summary: 'Remove your profile photo',
+        responses: { 200: { description: 'Removed', content: json({ type: 'object', properties: { user: ref('User') } }) }, 401: unauthorized },
+      },
+    },
+    '/users/me/password': {
+      post: {
+        tags: ['Users'],
+        summary: 'Change your password',
+        description: 'Signs out all other devices; this one gets a fresh session.',
+        requestBody: {
+          required: true,
+          content: json({ type: 'object', required: ['currentPassword', 'newPassword'], properties: { currentPassword: { type: 'string' }, newPassword: { type: 'string', minLength: 8, maxLength: 72 } } }),
+        },
+        responses: { 204: { description: 'Changed' }, 400: errorResponse('Current password wrong, or new password invalid'), 401: unauthorized },
+      },
+    },
+    '/exercises/{id}/image': {
+      post: {
+        tags: ['Exercises'],
+        summary: "Add or replace a photo on one of your gym's own exercises",
+        description: 'Needs `workout:create`. Built-in library exercises cannot be changed.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          required: true,
+          content: { 'multipart/form-data': { schema: { type: 'object', required: ['image'], properties: { image: { type: 'string', format: 'binary', description: 'Image file, up to 5 MB' } } } } },
+        },
+        responses: {
+          200: { description: 'Updated', content: json({ type: 'object', properties: { exercise: ref('Exercise') } }) },
+          400: errorResponse('Not an image, wrong type, or over 5 MB'),
+          401: unauthorized,
+          403: forbidden,
+          404: errorResponse("Not one of your gym's exercises"),
+        },
+      },
+    },
+    '/files/{key}': {
+      get: {
+        tags: ['Files'],
+        summary: 'An uploaded file (profile photo, exercise image)',
+        description:
+          'Only for people signed in to the gym the file belongs to. With local storage the file is returned directly; with S3 the response redirects to a signed link valid for 5 minutes. Use the avatarUrl/imageUrl values the API returns rather than building keys.',
+        parameters: [{ name: 'key', in: 'path', required: true, schema: { type: 'string' }, description: 'Storage key, e.g. gyms/<gymId>/avatars/<id>.webp' }],
+        responses: { 200: { description: 'The file' }, 302: { description: 'Redirect to a signed S3 link' }, 401: unauthorized, 404: errorResponse('File not found or not in your gym') },
       },
     },
   },

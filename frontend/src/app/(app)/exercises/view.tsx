@@ -55,7 +55,11 @@ export default function ExerciseLibrary() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: Math.min(i, 12) * 0.03 }}
             >
-              <Card className="h-full transition duration-300 hover:-translate-y-0.5 hover:border-white/20">
+              <Card className="h-full overflow-hidden transition duration-300 hover:-translate-y-0.5 hover:border-white/20">
+                {exercise.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element -- served by our API with auth cookies
+                  <img src={exercise.imageUrl} alt="" loading="lazy" className="-mx-6 -mt-6 mb-5 aspect-video w-[calc(100%+3rem)] max-w-none object-cover" />
+                )}
                 <div className="flex items-start gap-4">
                   <MuscleIconTile group={exercise.muscleGroup} />
                   <div className="min-w-0 space-y-2">
