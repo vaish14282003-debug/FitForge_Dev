@@ -8,6 +8,7 @@ import { FormError } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { ExercisePicker } from "@/components/workouts/exercise-picker";
 import { MuscleIconTile, Tag } from "@/components/workouts/exercise-bits";
 import { useClients, useUsers } from "@/hooks/use-gym";
@@ -261,6 +262,7 @@ export function PlanEditor({ plan }: { plan?: WorkoutPlan }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const savePlan = useSavePlan();
   const deletePlan = useDeletePlan();
+  const toast = useToast();
 
   const activeIndex = Math.max(0, draft.days.findIndex((d) => d.key === activeKey));
   const activeDay = draft.days[activeIndex];
@@ -316,6 +318,12 @@ export function PlanEditor({ plan }: { plan?: WorkoutPlan }) {
       { id: plan?.id, body: result.body, memberIds: assigneesChanged ? ids : null },
       {
         onSuccess: (saved) => {
+          toast({
+            title: plan ? "Plan saved" : "Plan created",
+            description: saved.assignedTo.length
+              ? `Assigned to ${saved.assignedTo.length} ${saved.assignedTo.length === 1 ? "member" : "members"}.`
+              : "Assign it to a client whenever you're ready.",
+          });
           if (!plan) {
             router.replace(`/plans/${saved.id}`);
             return;
@@ -489,7 +497,12 @@ export function PlanEditor({ plan }: { plan?: WorkoutPlan }) {
                 setTimeout(() => setConfirmDelete(false), 4000);
                 return;
               }
-              deletePlan.mutate(plan.id, { onSuccess: () => router.replace("/plans") });
+              deletePlan.mutate(plan.id, {
+                onSuccess: () => {
+                  toast({ title: "Plan deleted" });
+                  router.replace("/plans");
+                },
+              });
             }}
           >
             <Trash2 className="size-4" aria-hidden />

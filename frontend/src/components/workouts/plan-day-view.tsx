@@ -18,7 +18,7 @@ function Stat({ icon: Icon, children }: { icon: typeof Clock; children: React.Re
 }
 
 /** Read-only day-by-day view of a plan, with expandable how-to for each exercise. */
-export function PlanDayView({ days }: { days: PlanDay[] }) {
+export function PlanDayView({ days, action }: { days: PlanDay[]; action?: (dayIndex: number) => React.ReactNode }) {
   const [active, setActive] = useState(0);
   const [openRow, setOpenRow] = useState<number | null>(null);
   const day = days[active];
@@ -51,6 +51,7 @@ export function PlanDayView({ days }: { days: PlanDay[] }) {
       <div className="mb-4 flex flex-wrap items-center gap-2 text-muted-foreground">
         <Stat icon={Clock}>~{estimateMinutes(day)} min</Stat>
         <Stat icon={Repeat}>{day.exercises.length} exercises</Stat>
+        {action ? <span className="ml-auto">{action(active)}</span> : null}
       </div>
 
       <ol className="space-y-3">

@@ -3,15 +3,18 @@
 import { CalendarClock, ClipboardCheck, ClipboardList, Users } from "lucide-react";
 import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
 import { Card } from "@/components/ui/card";
+import { ReviewQueue } from "@/components/workouts/review-queue";
 import { useClients } from "@/hooks/use-gym";
+import { useSessions } from "@/hooks/use-sessions";
 import { useSession } from "@/hooks/use-session";
 import { usePlans } from "@/hooks/use-workouts";
 import { firstName, greeting } from "@/lib/utils";
 
 export default function TrainerDashboard() {
   const { data: session } = useSession();
-  const { data: clients } = useClients();
-  const { data: plans } = usePlans();
+  const { data: clients, isPending: clientsPending } = useClients();
+  const { data: plans, isPending: plansPending } = usePlans();
+  const pending = useSessions({ pendingReview: true, limit: 20 });
   // A plan counts as active once at least one client is following it.
   const activePlans = plans?.filter((p) => p.assignedTo.length > 0).length;
   if (!session) return null;
@@ -28,11 +31,14 @@ export default function TrainerDashboard() {
         subtitle="Your clients and what needs you today."
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard index={0} highlight label="My clients" icon={Users} value={clients?.length ?? "…"} />
-        <StatCard index={1} label="Active plans" icon={ClipboardList} value={activePlans ?? "…"} />
+        <StatCard index={0} highlight label="My clients" icon={Users} loading={clientsPending} value={clients?.length} />
+        <StatCard index={1} label="Active plans" icon={ClipboardList} loading={plansPending} value={activePlans} />
         <StatCard index={2} label="Today's sessions" icon={CalendarClock} />
-        <StatCard index={3} label="Pending reviews" icon={ClipboardCheck} />
+        <StatCard index={3} label="Pending reviews" icon={ClipboardCheck} loading={pending.isPending} value={pending.data?.length} />
       </div>
+
+      <h2 className="font-display mt-12 mb-4 text-3xl font-semibold">Needs your review</h2>
+      <ReviewQueue sessions={pending.data} loading={pending.isPending} />
 
       <h2 className="font-display mt-12 mb-4 text-3xl font-semibold">Clients</h2>
       {clients?.length === 0 ? (

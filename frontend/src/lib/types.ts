@@ -87,3 +87,48 @@ export type PlanInput = {
     exercises: { exercise: string; sets: number; reps: string; weight: number | null; restSeconds: number; notes: string }[];
   }[];
 };
+
+export type LoggedSet = { reps: number; weight: number | null; done: boolean };
+
+export type WorkoutSession = {
+  id: string;
+  member: UserRef;
+  plan: string | null;
+  planName: string;
+  dayIndex: number;
+  dayName: string;
+  startedAt: string;
+  completedAt: string;
+  durationSeconds: number;
+  totalVolume: number;
+  completedSets: number;
+  notes: string;
+  entries: {
+    exercise: string;
+    exerciseName: string;
+    muscleGroup: MuscleGroup;
+    target: { sets: number; reps: string; weight: number | null };
+    sets: LoggedSet[];
+  }[];
+  prs: { exercise: string; exerciseName: string; weight: number; reps: number }[];
+  review: { reviewedBy: { id: string; name: string } | null; reviewedAt: string | null; comment: string };
+};
+
+export type TrainingSummary = {
+  totalWorkouts: number;
+  streak: number;
+  trainedToday: boolean;
+  week: { date: string; count: number; volume: number }[];
+  nextUp: { planId: string; dayIndex: number }[];
+  recentPrs: { exercise: string; exerciseName: string; weight: number; reps: number; achievedAt: string }[];
+};
+
+export type PreviousSets = Record<string, { completedAt: string; sets: LoggedSet[] }>;
+
+export type SessionInput = {
+  planId: string;
+  dayIndex: number;
+  startedAt: string;
+  notes: string;
+  entries: { exercise: string; sets: LoggedSet[] }[];
+};

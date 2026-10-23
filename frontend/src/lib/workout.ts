@@ -45,3 +45,23 @@ export function estimateMinutes(day: { exercises: { sets: number; restSeconds: n
 
 export const formatRest = (seconds: number) =>
   seconds >= 60 ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} min` : `${seconds}s`;
+
+export function formatDuration(seconds: number) {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")} min`;
+}
+
+export const formatVolume = (kg: number) => (kg >= 1000 ? `${(kg / 1000).toFixed(1)} t` : `${Math.round(kg)} kg`);
+
+export function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+
+/** The heaviest completed set, written like "50 kg × 8", or reps only for bodyweight work. */
+export function bestSet(sets: { reps: number; weight: number | null; done: boolean }[]) {
+  const done = sets.filter((s) => s.done);
+  if (done.length === 0) return null;
+  const top = [...done].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0) || b.reps - a.reps)[0];
+  return top.weight ? `${top.weight} kg × ${top.reps}` : `${top.reps} reps`;
+}

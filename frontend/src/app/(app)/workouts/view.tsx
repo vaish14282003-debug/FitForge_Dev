@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Dumbbell } from "lucide-react";
+import Link from "next/link";
+import { Dumbbell, History, Play } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/stat-card";
+import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { startHref } from "@/components/workouts/todays-workout";
 import { PlanDayView } from "@/components/workouts/plan-day-view";
 import { usePlans } from "@/hooks/use-workouts";
 import { cn } from "@/lib/utils";
@@ -23,6 +26,12 @@ export default function MyWorkouts() {
           </>
         }
         subtitle="The plan your trainer built for you, day by day. Tap an exercise to see how to do it."
+        actions={
+          <Link href="/history" className={buttonClass({ variant: "outline" })}>
+            <History className="size-4" aria-hidden />
+            History
+          </Link>
+        }
       />
 
       {isPending ? null : !plan ? (
@@ -54,7 +63,16 @@ export default function MyWorkouts() {
             <h2 className="font-display mt-1 text-3xl font-semibold sm:text-4xl">{plan.name}</h2>
             {plan.description ? <p className="mt-2 max-w-2xl text-muted-foreground">{plan.description}</p> : null}
           </Card>
-          <PlanDayView key={plan.id} days={plan.days} />
+          <PlanDayView
+            key={plan.id}
+            days={plan.days}
+            action={(dayIndex) => (
+              <Link href={startHref(plan.id, dayIndex)} className={buttonClass({ size: "sm" })}>
+                <Play className="size-3.5 fill-current" aria-hidden />
+                Start this workout
+              </Link>
+            )}
+          />
         </>
       )}
     </>

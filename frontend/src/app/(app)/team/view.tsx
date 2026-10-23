@@ -10,6 +10,7 @@ import { EmptyState, PageHeader } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { useAssignTrainer, useCreateUser, useUsers, type ManagedRole } from "@/hooks/use-gym";
 import { useSession } from "@/hooks/use-session";
 import { can } from "@/lib/access";
@@ -30,6 +31,7 @@ const schema = z.object({
 
 function AddUserForm({ role, singular, onDone }: { role: ManagedRole; singular: string; onDone: () => void }) {
   const createUser = useCreateUser();
+  const toast = useToast();
   const {
     register,
     handleSubmit,
@@ -41,7 +43,17 @@ function AddUserForm({ role, singular, onDone }: { role: ManagedRole; singular: 
       <form
         className="grid gap-4 sm:grid-cols-3"
         noValidate
-        onSubmit={handleSubmit((values) => createUser.mutate({ ...values, role }, { onSuccess: onDone }))}
+        onSubmit={handleSubmit((values) =>
+          createUser.mutate(
+            { ...values, role },
+            {
+              onSuccess: () => {
+                toast({ title: `${values.name} added`, description: `They can log in with ${values.email}.` });
+                onDone();
+              },
+            },
+          ),
+        )}
       >
         <Field label="Full name" htmlFor="new-name" error={errors.name?.message}>
           <Input id="new-name" aria-invalid={!!errors.name} {...register("name")} />
@@ -75,13 +87,26 @@ function AddUserForm({ role, singular, onDone }: { role: ManagedRole; singular: 
 
 function TrainerSelect({ member, trainers }: { member: User; trainers: User[] }) {
   const assign = useAssignTrainer();
+  const toast = useToast();
   return (
     <Select
       aria-label={`Trainer for ${member.name}`}
       className="h-10 w-44 rounded-full"
       value={member.trainer?.id ?? ""}
       disabled={assign.isPending}
-      onChange={(e) => assign.mutate({ memberId: member.id, trainerId: e.target.value || null })}
+      onChange={(e) => {
+        const trainer = trainers.find((t) => t.id === e.target.value);
+        assign.mutate(
+          { memberId: member.id, trainerId: e.target.value || null },
+          {
+            onSuccess: () =>
+              toast({
+                title: trainer ? `${member.name} → ${trainer.name}` : `${member.name} has no trainer now`,
+              }),
+            onError: (err) => toast({ title: "Couldn't change trainer", description: err.message, tone: "error" }),
+          },
+        );
+      }}
     >
       <option value="">No trainer</option>
       {trainers.map((trainer) => (

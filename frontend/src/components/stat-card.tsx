@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type StatCardProps = {
@@ -13,9 +14,13 @@ type StatCardProps = {
   index?: number;
   /** Solid red card for the one number that matters most on the page. */
   highlight?: boolean;
+  /** Shows a placeholder instead of "Coming soon" while the value loads. */
+  loading?: boolean;
+  /** Small line under the value, e.g. a unit or context. */
+  hint?: string;
 };
 
-export function StatCard({ label, value, icon: Icon, index = 0, highlight = false }: StatCardProps) {
+export function StatCard({ label, value, icon: Icon, index = 0, highlight = false, loading = false, hint }: StatCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -41,7 +46,9 @@ export function StatCard({ label, value, icon: Icon, index = 0, highlight = fals
             <Icon className="size-[18px]" aria-hidden />
           </span>
         </div>
-        {value === undefined ? (
+        {loading ? (
+          <Skeleton className={cn("mt-4 h-10 w-24", highlight && "bg-white/20")} />
+        ) : value === undefined ? (
           <p className="mt-4 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-muted-foreground">
             Coming soon
           </p>
@@ -56,6 +63,9 @@ export function StatCard({ label, value, icon: Icon, index = 0, highlight = fals
             {value}
           </p>
         )}
+        {hint && !loading ? (
+          <p className={cn("mt-1 text-sm", highlight ? "text-white/80" : "text-muted-foreground")}>{hint}</p>
+        ) : null}
       </Card>
     </motion.div>
   );

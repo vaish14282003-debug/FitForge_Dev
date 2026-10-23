@@ -25,4 +25,6 @@ const gymSchema = new mongoose.Schema(
   }
 );
 
+gymSchema.statics.generateJoinCode = generateJoinCode;
+
 module.exports = mongoose.model('Gym', gymSchema);

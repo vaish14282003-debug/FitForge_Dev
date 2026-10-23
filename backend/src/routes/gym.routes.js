@@ -26,5 +26,6 @@ router.use(authenticate);
 
 router.get('/', controller.getMyGym);
 router.get('/overview', authorize(P.MEMBERS_MANAGE, P.TRAINERS_MANAGE), controller.getOverview);
+router.post('/join-code', authorize(P.GYM_SETTINGS), controller.rotateJoinCode);
 
 module.exports = router;

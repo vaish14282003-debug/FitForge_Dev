@@ -29,6 +29,7 @@ const RULES: Rule[] = [
   { prefix: "/plans", allow: (s) => can(s, "workout:create") },
   { prefix: "/exercises", allow: (s) => can(s, "workout:create") },
   { prefix: "/workouts", allow: (s) => s.user.role === "MEMBER" },
+  { prefix: "/history", allow: (s) => s.user.role === "MEMBER" },
 ];
 
 export function canVisit(session: Session, pathname: string) {

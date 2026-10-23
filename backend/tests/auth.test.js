@@ -27,7 +27,7 @@ describe('register', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.user).toMatchObject({ role: 'MEMBER', gym: gym.id });
-    expect(res.body.permissions).toEqual(['profile:read:own', 'profile:update:own']);
+    expect(res.body.permissions).toEqual(['profile:read:own', 'profile:update:own', 'workout:log']);
   });
 
   it('rejects an unknown gym code', async () => {

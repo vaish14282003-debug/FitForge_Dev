@@ -7,6 +7,7 @@ import { FormError } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, Select } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { useCreateExercise } from "@/hooks/use-workouts";
 import { EQUIPMENT, MUSCLE_GROUPS } from "@/lib/workout";
 import type { Exercise } from "@/lib/types";
@@ -22,6 +23,7 @@ type Values = z.infer<typeof schema>;
 
 export function AddExerciseDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const createExercise = useCreateExercise();
+  const toast = useToast();
   const {
     register,
     handleSubmit,
@@ -40,7 +42,14 @@ export function AddExerciseDialog({ open, onClose }: { open: boolean; onClose: (
 
   return (
     <Dialog open={open} onClose={close} title="Add an exercise" description="It's added to your gym's library for every trainer.">
-      <form className="space-y-5" noValidate onSubmit={handleSubmit((values) => createExercise.mutate(values, { onSuccess: close }))}>
+      <form className="space-y-5" noValidate onSubmit={handleSubmit((values) =>
+          createExercise.mutate(values, {
+            onSuccess: () => {
+              toast({ title: "Exercise added", description: `${values.name} is now in your gym's library.` });
+              close();
+            },
+          }),
+        )}>
         <Field label="Name" htmlFor="ex-name" error={errors.name?.message}>
           <Input id="ex-name" placeholder="e.g. Landmine Press" aria-invalid={!!errors.name} {...register("name")} />
         </Field>

@@ -25,5 +25,6 @@ export const config = {
     "/plans/:path*",
     "/exercises/:path*",
     "/workouts/:path*",
+    "/history/:path*",
   ],
 };

@@ -15,7 +15,13 @@ Fitness tracking and gym management for members, trainers and gym owners.
   a plan builder (days, exercises with sets/reps/weight/rest, drag to reorder) for trainers and
   owners; assigning plans to clients; members see their plan and today's workout.
 
-Logging workouts, progress, attendance, memberships, scheduling and uploads are not built yet.
+- **Workout logging** (step 2): members start today's workout, log weight and reps per set with
+  "last time" hints and a rest timer (progress survives a refresh), then get a completion screen.
+  The API works out duration, volume, personal records, streaks and the next day in the plan.
+  Trainers review client workouts from their dashboard; members see the feedback in History.
+- **Join codes**: owners can replace the gym's join code; the old one stops working.
+
+Progress charts, attendance, memberships, scheduling and uploads are not built yet.
 Dashboard cards for those say "Coming soon".
 
 ### How people get accounts
@@ -86,6 +92,11 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | GET | `/api/plans`, `/api/plans/:id` | Signed in (owners: all; trainers: their own; members: assigned to them) |
 | POST, PUT, DELETE | `/api/plans`, `/api/plans/:id` | `workout:create` (trainers edit their own) |
 | PUT | `/api/plans/:id/assignees` | `workout:assign` (trainers: their own clients only) |
+| POST | `/api/gym/join-code` | `gym:settings` (replaces the join code) |
+| POST | `/api/sessions` | `workout:log` (members) |
+| GET | `/api/sessions/summary`, `/api/sessions/previous` | `workout:log` |
+| GET | `/api/sessions`, `/api/sessions/:id` | Members: own; trainers: their clients; owners: the gym |
+| PATCH | `/api/sessions/:id/review` | `clients:read:assigned` |
 
 ## Tech stack: what each piece does here
 
@@ -98,7 +109,7 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | Tailwind CSS 4 | All styling. Theme colours and fonts are tokens in `src/app/globals.css`. |
 | TanStack Query | Fetches and caches API data (`src/hooks/use-*.ts`) and refreshes lists after a save. |
 | React Hook Form + Zod | Forms and their validation (login, register, add exercise, add team member). |
-| Framer Motion | Card fade-ups, the drag-to-reorder exercise list, expanding rows. |
+| Framer Motion | Page fades, card fade-ups, drag-to-reorder, the rest timer, the workout-complete celebration. |
 | Lucide | Icons. |
 | next/font | Fraunces (headings) and Plus Jakarta Sans (body), self-hosted at build time. |
 
@@ -107,7 +118,7 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | Tool | Its job in FitForge |
 | --- | --- |
 | Express 5 | The HTTP API. `src/routes` maps URLs to `src/controllers`. |
-| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan. |
+| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession. |
 | JWT + bcrypt | Login sessions (`src/utils/tokens.js`) and password hashing. |
 | Joi | Validates every request body and query (`src/validators`). |
 | RBAC map | `src/config/roles.js` says which role has which permission; `authorize()` checks it per route. |

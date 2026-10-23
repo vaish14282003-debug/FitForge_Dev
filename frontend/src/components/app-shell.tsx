@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ClipboardList, Dumbbell, LayoutDashboard, Library, LogOut, Users, type LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
+import { ClipboardList, Dumbbell, History, LayoutDashboard, Library, LogOut, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { useLogout, useSession } from "@/hooks/use-session";
@@ -17,6 +18,7 @@ const NAV: NavItem[] = [
   { href: "/trainer", label: "Dashboard", icon: LayoutDashboard },
   { href: "/owner", label: "Dashboard", icon: LayoutDashboard },
   { href: "/workouts", label: "Workouts", icon: Dumbbell },
+  { href: "/history", label: "History", icon: History },
   { href: "/plans", label: "Plans", icon: ClipboardList },
   { href: "/exercises", label: "Exercises", icon: Library },
   { href: "/team", label: "Team", icon: Users },
@@ -79,6 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const { user } = session;
   const nav = NAV.filter((item) => canVisit(session, item.href));
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <div className="relative isolate flex flex-1 flex-col">
@@ -88,9 +91,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-black/40 py-2 pr-2 pl-4 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl sm:pl-5">
           <Logo href={ROLE_HOME[user.role]} className="text-xl" />
 
-          <nav className="order-last -mx-1 flex w-full gap-1 overflow-x-auto px-1 sm:order-none sm:mx-0 sm:w-auto sm:justify-center sm:px-0" aria-label="Main">
+          <nav className="hidden gap-1 sm:flex" aria-label="Main">
             {nav.map(({ href, label, icon: Icon }) => {
-              const active = pathname === href || pathname.startsWith(`${href}/`);
+              const active = isActive(href);
               return (
                 <Link
                   key={href}
@@ -130,7 +133,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-10 lg:py-14">{children}</main>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-8 pb-28 sm:px-6 sm:pt-10 sm:pb-14 lg:px-10 lg:pt-14">{children}</main>
+
+      {/* Phone navigation: a thumb-reachable tab bar instead of the header links. */}
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-full border border-white/10 bg-black/70 p-1.5 shadow-[0_-10px_40px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:hidden"
+      >
+        {nav.map(({ href, label, icon: Icon }) => {
+          const active = isActive(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-full px-2 py-2 text-[11px] font-medium transition",
+                active ? "text-white" : "text-white/55",
+              )}
+            >
+              {active && (
+                <motion.span
+                  layoutId="tab-pill"
+                  className="absolute inset-0 rounded-full bg-primary shadow-[0_6px_20px_-8px_var(--primary)]"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                />
+              )}
+              <Icon className="relative size-5" aria-hidden />
+              <span className="relative truncate">{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

@@ -38,6 +38,7 @@ module.exports = {
     { name: 'Gym', description: "The signed-in user's gym" },
     { name: 'Exercises', description: 'Built-in library plus each gym\'s own exercises' },
     { name: 'Plans', description: 'Workout plans: days of exercises, assigned to members' },
+    { name: 'Sessions', description: 'Logged workouts, PRs, streaks and trainer reviews' },
   ],
   components: {
     securitySchemes: {
@@ -167,6 +168,57 @@ module.exports = {
           },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      LoggedSet: {
+        type: 'object',
+        required: ['reps'],
+        properties: {
+          reps: { type: 'integer', example: 10 },
+          weight: { type: 'number', nullable: true, example: 40 },
+          done: { type: 'boolean', example: true },
+        },
+      },
+      WorkoutSession: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          member: ref('UserRef'),
+          plan: { type: 'string' },
+          planName: { type: 'string', example: 'Push Pull Legs' },
+          dayIndex: { type: 'integer', example: 0 },
+          dayName: { type: 'string', example: 'Push' },
+          startedAt: { type: 'string', format: 'date-time' },
+          completedAt: { type: 'string', format: 'date-time' },
+          durationSeconds: { type: 'integer', example: 2700 },
+          totalVolume: { type: 'number', example: 4250, description: 'Sum of weight × reps over completed sets (kg)' },
+          completedSets: { type: 'integer', example: 15 },
+          notes: { type: 'string' },
+          entries: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                exercise: { type: 'string' },
+                exerciseName: { type: 'string' },
+                muscleGroup: { type: 'string' },
+                target: { type: 'object', properties: { sets: { type: 'integer' }, reps: { type: 'string' }, weight: { type: 'number', nullable: true } } },
+                sets: { type: 'array', items: ref('LoggedSet') },
+              },
+            },
+          },
+          prs: {
+            type: 'array',
+            items: { type: 'object', properties: { exercise: { type: 'string' }, exerciseName: { type: 'string' }, weight: { type: 'number' }, reps: { type: 'integer' } } },
+          },
+          review: {
+            type: 'object',
+            properties: {
+              reviewedBy: { allOf: [ref('UserRef')], nullable: true },
+              reviewedAt: { type: 'string', format: 'date-time', nullable: true },
+              comment: { type: 'string' },
+            },
+          },
         },
       },
       Error: {
@@ -529,6 +581,137 @@ module.exports = {
           403: forbidden,
           404: errorResponse('Plan not found'),
         },
+      },
+    },
+
+    '/gym/join-code': {
+      post: {
+        tags: ['Gym'],
+        summary: 'Replace the gym join code with a new one',
+        description: 'Needs `gym:settings`. The old code stops working; existing members are not affected.',
+        responses: {
+          200: { description: 'Gym with the new code', content: json({ type: 'object', properties: { gym: ref('Gym') } }) },
+          401: unauthorized,
+          403: forbidden,
+        },
+      },
+    },
+    '/sessions': {
+      post: {
+        tags: ['Sessions'],
+        summary: 'Save a finished workout',
+        description:
+          'Needs `workout:log` (members). The plan must be assigned to you and every exercise must belong to that day. The server works out duration, volume and personal records.',
+        requestBody: {
+          required: true,
+          content: json({
+            type: 'object',
+            required: ['planId', 'dayIndex', 'startedAt', 'entries'],
+            properties: {
+              planId: { type: 'string' },
+              dayIndex: { type: 'integer', example: 0 },
+              startedAt: { type: 'string', format: 'date-time' },
+              notes: { type: 'string' },
+              entries: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  required: ['exercise', 'sets'],
+                  properties: { exercise: { type: 'string' }, sets: { type: 'array', items: ref('LoggedSet') } },
+                },
+              },
+            },
+          }),
+        },
+        responses: {
+          201: { description: 'Saved', content: json({ type: 'object', properties: { session: ref('WorkoutSession') } }) },
+          400: errorResponse('Validation failed, no completed sets, or exercise not in this day'),
+          401: unauthorized,
+          403: forbidden,
+          404: errorResponse('Plan not found or not assigned to you'),
+        },
+      },
+      get: {
+        tags: ['Sessions'],
+        summary: 'Workout history',
+        description: 'Members: their own. Trainers: their clients. Owners: the whole gym.',
+        parameters: [
+          { name: 'member', in: 'query', schema: { type: 'string' }, description: 'Only this member (must be in your scope)' },
+          { name: 'pendingReview', in: 'query', schema: { type: 'boolean' }, description: 'Only sessions without a trainer review' },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 30, maximum: 100 } },
+        ],
+        responses: {
+          200: { description: 'Sessions, newest first', content: json({ type: 'object', properties: { sessions: { type: 'array', items: ref('WorkoutSession') } } }) },
+          401: unauthorized,
+          403: forbidden,
+        },
+      },
+    },
+    '/sessions/summary': {
+      get: {
+        tags: ['Sessions'],
+        summary: 'Streak, weekly activity, next day up and recent PRs for the signed-in member',
+        description: 'Needs `workout:log`.',
+        parameters: [
+          { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 }, description: 'Browser timezone offset in minutes (Date#getTimezoneOffset)' },
+        ],
+        responses: {
+          200: {
+            description: 'Summary',
+            content: json({
+              type: 'object',
+              properties: {
+                summary: {
+                  type: 'object',
+                  properties: {
+                    totalWorkouts: { type: 'integer' },
+                    streak: { type: 'integer', description: 'Consecutive days with a workout' },
+                    trainedToday: { type: 'boolean' },
+                    week: { type: 'array', items: { type: 'object', properties: { date: { type: 'string' }, count: { type: 'integer' }, volume: { type: 'number' } } } },
+                    nextUp: { type: 'array', items: { type: 'object', properties: { planId: { type: 'string' }, dayIndex: { type: 'integer' } } } },
+                    recentPrs: { type: 'array', items: { type: 'object' } },
+                  },
+                },
+              },
+            }),
+          },
+          401: unauthorized,
+          403: forbidden,
+        },
+      },
+    },
+    '/sessions/previous': {
+      get: {
+        tags: ['Sessions'],
+        summary: 'Your last logged sets for each exercise ("last time" hints)',
+        description: 'Needs `workout:log`.',
+        parameters: [
+          { name: 'exercises', in: 'query', required: true, schema: { type: 'string' }, description: 'Comma-separated exercise ids (max 20)' },
+        ],
+        responses: {
+          200: { description: 'Map of exercise id to its last sets', content: json({ type: 'object', properties: { previous: { type: 'object' } } }) },
+          400: badRequest,
+          401: unauthorized,
+          403: forbidden,
+        },
+      },
+    },
+    '/sessions/{id}': {
+      get: {
+        tags: ['Sessions'],
+        summary: 'One logged workout',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Session', content: json({ type: 'object', properties: { session: ref('WorkoutSession') } }) }, 401: unauthorized, 403: forbidden, 404: errorResponse('Workout not found') },
+      },
+    },
+    '/sessions/{id}/review': {
+      patch: {
+        tags: ['Sessions'],
+        summary: 'Leave trainer feedback on a client workout',
+        description: 'Needs `clients:read:assigned`. Trainers can review their own clients; owners anyone in the gym.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: json({ type: 'object', required: ['comment'], properties: { comment: { type: 'string', example: 'Great depth on the squats — add 2.5 kg next time.' } } }) },
+        responses: { 200: { description: 'Reviewed', content: json({ type: 'object', properties: { session: ref('WorkoutSession') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Workout not found') },
       },
     },
   },

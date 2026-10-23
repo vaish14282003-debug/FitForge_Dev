@@ -30,4 +30,13 @@ async function lookupByCode(req, res) {
   res.json({ gym: { name: gym.name } });
 }
 
-module.exports = { getMyGym, getOverview, lookupByCode };
+// Invalidates the old code, e.g. after it was shared too widely. Existing members are unaffected.
+async function rotateJoinCode(req, res) {
+  const gym = await Gym.findById(req.user.gym);
+  if (!gym) throw ApiError.notFound('Gym not found');
+  gym.joinCode = Gym.generateJoinCode();
+  await gym.save();
+  res.json({ gym });
+}
+
+module.exports = { getMyGym, getOverview, lookupByCode, rotateJoinCode };

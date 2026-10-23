@@ -67,3 +67,11 @@ export function useAssignTrainer() {
     },
   });
 }
+
+export function useRotateJoinCode() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ gym: Gym }>("/gym/join-code", { method: "POST" }).then((r) => r.gym),
+    onSuccess: (gym) => queryClient.setQueryData(["gym"], gym),
+  });
+}
