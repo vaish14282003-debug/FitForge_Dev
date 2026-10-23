@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -122,6 +123,8 @@ export default function TeamPage() {
   const { data: session } = useSession();
   const canManageMembers = !!session && can(session, "members:manage");
   const canManageTrainers = !!session && can(session, "trainers:manage");
+  // Owners can open any member's progress; staff manage accounts but not training data.
+  const canSeeProgress = !!session && can(session, "clients:read:assigned");
   const tabs = TABS.filter((tab) => (tab.role === "MEMBER" ? canManageMembers : canManageTrainers));
 
   const [selected, setSelected] = useState<ManagedRole | null>(null);
@@ -195,7 +198,13 @@ export default function TeamPage() {
                       <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-accent-text">
                         {user.name.charAt(0).toUpperCase()}
                       </span>
-                      {user.name}
+                      {tab.role === "MEMBER" && canSeeProgress ? (
+                        <Link href={`/clients/${user.id}`} className="underline-offset-4 hover:text-accent-text hover:underline">
+                          {user.name}
+                        </Link>
+                      ) : (
+                        user.name
+                      )}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-muted-foreground">{user.email}</td>

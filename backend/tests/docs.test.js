@@ -5,7 +5,7 @@ const openapi = require('../src/docs/openapi');
 // Walks the Express router so a new route without docs fails this test.
 function mountedRoutes() {
   const routes = [];
-  const prefixes = { auth: '/auth', users: '/users', gym: '/gym', exercises: '/exercises', plans: '/plans', sessions: '/sessions' };
+  const prefixes = { auth: '/auth', users: '/users', gym: '/gym', exercises: '/exercises', plans: '/plans', sessions: '/sessions', progress: '/progress' };
   const apiRouter = require('../src/routes');
   for (const layer of apiRouter.stack) {
     if (layer.route) {

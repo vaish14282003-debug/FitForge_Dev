@@ -132,3 +132,38 @@ export type SessionInput = {
   notes: string;
   entries: { exercise: string; sets: LoggedSet[] }[];
 };
+
+export type Measurements = { chest: number | null; waist: number | null; hips: number | null; arm: number | null; thigh: number | null };
+
+export type BodyMetric = {
+  id: string;
+  day: string;
+  weight: number | null;
+  bodyFat: number | null;
+  measurements: Measurements;
+  note: string;
+};
+
+export type ProgressMetrics = {
+  member: { id: string; name: string };
+  goal: { targetWeight: number | null };
+  metrics: BodyMetric[];
+};
+
+export type TrainingProgress = {
+  weekly: { weekStart: string; workouts: number; volume: number }[];
+  exercises: { exercise: string; name: string; muscleGroup: MuscleGroup; sessions: number; bestWeight: number | null }[];
+};
+
+export type StrengthSeries = {
+  exercise: { id: string; name: string };
+  points: { date: string; bestWeight: number | null; e1rm: number | null; topSet: { weight: number; reps: number } | null; reps: number; volume: number }[];
+};
+
+export type MetricInput = {
+  day: string;
+  weight?: number | null;
+  bodyFat?: number | null;
+  measurements?: Partial<Measurements>;
+  note?: string;
+};

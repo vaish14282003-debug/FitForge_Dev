@@ -39,6 +39,7 @@ module.exports = {
     { name: 'Exercises', description: 'Built-in library plus each gym\'s own exercises' },
     { name: 'Plans', description: 'Workout plans: days of exercises, assigned to members' },
     { name: 'Sessions', description: 'Logged workouts, PRs, streaks and trainer reviews' },
+    { name: 'Progress', description: 'Body weight and measurements, goals, strength and volume over time' },
   ],
   components: {
     securitySchemes: {
@@ -219,6 +220,26 @@ module.exports = {
               comment: { type: 'string' },
             },
           },
+        },
+      },
+      BodyMetric: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          day: { type: 'string', example: '2026-10-23' },
+          weight: { type: 'number', nullable: true, example: 62.4 },
+          bodyFat: { type: 'number', nullable: true, example: 22.5 },
+          measurements: {
+            type: 'object',
+            properties: {
+              chest: { type: 'number', nullable: true },
+              waist: { type: 'number', nullable: true },
+              hips: { type: 'number', nullable: true },
+              arm: { type: 'number', nullable: true },
+              thigh: { type: 'number', nullable: true },
+            },
+          },
+          note: { type: 'string' },
         },
       },
       Error: {
@@ -712,6 +733,129 @@ module.exports = {
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         requestBody: { required: true, content: json({ type: 'object', required: ['comment'], properties: { comment: { type: 'string', example: 'Great depth on the squats — add 2.5 kg next time.' } } }) },
         responses: { 200: { description: 'Reviewed', content: json({ type: 'object', properties: { session: ref('WorkoutSession') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Workout not found') },
+      },
+    },
+
+    '/progress/metrics': {
+      get: {
+        tags: ['Progress'],
+        summary: 'Weigh-ins and measurements, oldest first, plus the weight goal',
+        description: 'Members: their own. Trainers: a client via ?member=. Owners: any member.',
+        parameters: [{ name: 'member', in: 'query', schema: { type: 'string' }, description: 'Trainers/owners: which member (required for them)' }],
+        responses: {
+          200: {
+            description: 'Metrics',
+            content: json({
+              type: 'object',
+              properties: {
+                member: ref('UserRef'),
+                goal: { type: 'object', properties: { targetWeight: { type: 'number', nullable: true } } },
+                metrics: { type: 'array', items: ref('BodyMetric') },
+              },
+            }),
+          },
+          400: badRequest,
+          401: unauthorized,
+          403: forbidden,
+          404: errorResponse('Member not found or not yours'),
+        },
+      },
+      put: {
+        tags: ['Progress'],
+        summary: 'Log weight, body fat or measurements for a day (updates that day if it exists)',
+        description: 'Needs `workout:log` (members).',
+        requestBody: {
+          required: true,
+          content: json({
+            type: 'object',
+            required: ['day'],
+            properties: {
+              day: { type: 'string', example: '2026-10-23' },
+              weight: { type: 'number', example: 62.4 },
+              bodyFat: { type: 'number', example: 22.5 },
+              measurements: { type: 'object', properties: { waist: { type: 'number', example: 72 } } },
+              note: { type: 'string' },
+            },
+          }),
+        },
+        responses: {
+          200: { description: 'Saved', content: json({ type: 'object', properties: { metric: ref('BodyMetric') } }) },
+          400: badRequest,
+          401: unauthorized,
+          403: forbidden,
+        },
+      },
+    },
+    '/progress/metrics/{id}': {
+      delete: {
+        tags: ['Progress'],
+        summary: 'Delete one of your entries',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 204: { description: 'Deleted' }, 401: unauthorized, 403: forbidden, 404: errorResponse('Entry not found') },
+      },
+    },
+    '/progress/goal': {
+      put: {
+        tags: ['Progress'],
+        summary: 'Set or clear your target body weight',
+        requestBody: { required: true, content: json({ type: 'object', required: ['targetWeight'], properties: { targetWeight: { type: 'number', nullable: true, example: 60 } } }) },
+        responses: {
+          200: { description: 'Saved', content: json({ type: 'object', properties: { goal: { type: 'object' } } }) },
+          400: badRequest,
+          401: unauthorized,
+          403: forbidden,
+        },
+      },
+    },
+    '/progress/training': {
+      get: {
+        tags: ['Progress'],
+        summary: 'Weekly workouts and volume, and every exercise logged with its best weight',
+        parameters: [
+          { name: 'member', in: 'query', schema: { type: 'string' }, description: 'Trainers/owners: which member (required for them)' },
+          { name: 'weeks', in: 'query', schema: { type: 'integer', default: 12, minimum: 4, maximum: 52 } },
+          { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 }, description: 'Browser timezone offset (minutes)' },
+        ],
+        responses: {
+          200: {
+            description: 'Training summary',
+            content: json({
+              type: 'object',
+              properties: {
+                weekly: { type: 'array', items: { type: 'object', properties: { weekStart: { type: 'string' }, workouts: { type: 'integer' }, volume: { type: 'number' } } } },
+                exercises: { type: 'array', items: { type: 'object', properties: { exercise: { type: 'string' }, name: { type: 'string' }, muscleGroup: { type: 'string' }, sessions: { type: 'integer' }, bestWeight: { type: 'number', nullable: true } } } },
+              },
+            }),
+          },
+          400: badRequest,
+          401: unauthorized,
+          403: forbidden,
+          404: errorResponse('Member not found or not yours'),
+        },
+      },
+    },
+    '/progress/strength': {
+      get: {
+        tags: ['Progress'],
+        summary: 'One exercise over time: best weight and estimated 1-rep max per session',
+        description: 'Estimated 1RM uses the Epley formula, weight × (1 + reps / 30).',
+        parameters: [{ name: 'member', in: 'query', schema: { type: 'string' }, description: 'Trainers/owners: which member (required for them)' }, { name: 'exercise', in: 'query', required: true, schema: { type: 'string' } }],
+        responses: {
+          200: {
+            description: 'Series',
+            content: json({
+              type: 'object',
+              properties: {
+                exercise: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string' } } },
+                points: { type: 'array', items: { type: 'object', properties: { date: { type: 'string', format: 'date-time' }, bestWeight: { type: 'number', nullable: true }, e1rm: { type: 'number', nullable: true }, reps: { type: 'integer' }, volume: { type: 'number' } } } },
+              },
+            }),
+          },
+          400: badRequest,
+          401: unauthorized,
+          403: forbidden,
+          404: errorResponse('No logged sets for this exercise, or member not yours'),
+        },
       },
     },
   },

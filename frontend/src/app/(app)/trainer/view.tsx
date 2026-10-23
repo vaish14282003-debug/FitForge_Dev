@@ -1,6 +1,7 @@
 "use client";
 
-import { CalendarClock, ClipboardCheck, ClipboardList, Users } from "lucide-react";
+import Link from "next/link";
+import { CalendarClock, ChevronRight, ClipboardCheck, ClipboardList, Users } from "lucide-react";
 import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
 import { Card } from "@/components/ui/card";
 import { ReviewQueue } from "@/components/workouts/review-queue";
@@ -49,15 +50,19 @@ export default function TrainerDashboard() {
         <Card className="p-2">
           <ul>
             {clients?.map((client) => (
-              <li
-                key={client.id}
-                className="flex items-center gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-white/[0.04]"
-              >
+              <li key={client.id}>
+                <Link
+                  href={`/clients/${client.id}`}
+                  className="group flex items-center gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-white/[0.04]"
+                >
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-accent-text">
                   {client.name.charAt(0).toUpperCase()}
                 </span>
                 <span className="font-medium">{client.name}</span>
-                <span className="ml-auto truncate text-sm text-muted-foreground">{client.email}</span>
+                <span className="ml-auto hidden truncate text-sm text-muted-foreground sm:block">{client.email}</span>
+                <span className="text-sm text-muted-foreground transition group-hover:text-foreground">Progress</span>
+                <ChevronRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5" aria-hidden />
+                </Link>
               </li>
             ))}
           </ul>

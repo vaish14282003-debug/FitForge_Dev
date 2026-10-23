@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema(
     // Only meaningful for members: the trainer they are assigned to.
     trainer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     avatarUrl: { type: String, default: null },
+    // Member goals, used for goal progress on the Progress page.
+    goals: {
+      targetWeight: { type: Number, default: null, min: 20, max: 400 },
+    },
     isActive: { type: Boolean, default: true },
   },
   {

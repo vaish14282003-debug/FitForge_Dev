@@ -21,7 +21,12 @@ Fitness tracking and gym management for members, trainers and gym owners.
   Trainers review client workouts from their dashboard; members see the feedback in History.
 - **Join codes**: owners can replace the gym's join code; the old one stops working.
 
-Progress charts, attendance, memberships, scheduling and uploads are not built yet.
+- **Progress** (step 3): members log weigh-ins, body fat and measurements and set a weight goal;
+  charts show body weight against the goal, strength per exercise (estimated 1-rep max or heaviest
+  set) and weekly volume, each with a table view. Trainers and owners open a client's progress
+  read-only from their dashboard or the Team page.
+
+Attendance, memberships, scheduling and uploads are not built yet.
 Dashboard cards for those say "Coming soon".
 
 ### How people get accounts
@@ -44,6 +49,7 @@ cp .env.example .env          # then set JWT_ACCESS_SECRET (command is in the fi
 npm install
 npm run seed                  # optional: demo gym, one account per role, a sample plan (wipes the DB)
 npm run seed:exercises        # adds/updates the built-in exercise library without touching other data
+npm run seed:progress         # adds ~8 weeks of demo workouts and weigh-ins for member@fitforge.dev (non-destructive)
 npm run dev                   # API on http://localhost:4000
 
 cd ../frontend
@@ -97,6 +103,8 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | GET | `/api/sessions/summary`, `/api/sessions/previous` | `workout:log` |
 | GET | `/api/sessions`, `/api/sessions/:id` | Members: own; trainers: their clients; owners: the gym |
 | PATCH | `/api/sessions/:id/review` | `clients:read:assigned` |
+| GET | `/api/progress/metrics`, `/training`, `/strength` | Members: own; trainers/owners: `?member=` in scope |
+| PUT, DELETE | `/api/progress/metrics`, `/api/progress/goal` | `workout:log` (members, own data) |
 
 ## Tech stack: what each piece does here
 
@@ -109,6 +117,7 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | Tailwind CSS 4 | All styling. Theme colours and fonts are tokens in `src/app/globals.css`. |
 | TanStack Query | Fetches and caches API data (`src/hooks/use-*.ts`) and refreshes lists after a save. |
 | React Hook Form + Zod | Forms and their validation (login, register, add exercise, add team member). |
+| Recharts | The progress charts (body weight, strength, weekly volume) in `src/components/progress/charts.tsx`. |
 | Framer Motion | Page fades, card fade-ups, drag-to-reorder, the rest timer, the workout-complete celebration. |
 | Lucide | Icons. |
 | next/font | Fraunces (headings) and Plus Jakarta Sans (body), self-hosted at build time. |
@@ -118,7 +127,7 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | Tool | Its job in FitForge |
 | --- | --- |
 | Express 5 | The HTTP API. `src/routes` maps URLs to `src/controllers`. |
-| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession. |
+| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric. |
 | JWT + bcrypt | Login sessions (`src/utils/tokens.js`) and password hashing. |
 | Joi | Validates every request body and query (`src/validators`). |
 | RBAC map | `src/config/roles.js` says which role has which permission; `authorize()` checks it per route. |

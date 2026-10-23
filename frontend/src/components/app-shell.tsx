@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ClipboardList, Dumbbell, History, LayoutDashboard, Library, LogOut, Users, type LucideIcon } from "lucide-react";
+import { ChartLine, ClipboardList, Dumbbell, History, LayoutDashboard, Library, LogOut, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { useLogout, useSession } from "@/hooks/use-session";
@@ -18,6 +18,7 @@ const NAV: NavItem[] = [
   { href: "/trainer", label: "Dashboard", icon: LayoutDashboard },
   { href: "/owner", label: "Dashboard", icon: LayoutDashboard },
   { href: "/workouts", label: "Workouts", icon: Dumbbell },
+  { href: "/progress", label: "Progress", icon: ChartLine },
   { href: "/history", label: "History", icon: History },
   { href: "/plans", label: "Plans", icon: ClipboardList },
   { href: "/exercises", label: "Exercises", icon: Library },
