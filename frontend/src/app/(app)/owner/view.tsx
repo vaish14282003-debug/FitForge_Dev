@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarCheck, CalendarClock, Check, Copy, IdCard, IndianRupee, RefreshCw, UserCog, Users } from "lucide-react";
+import { CalendarCheck, CalendarClock, Check, Copy, IdCard, IndianRupee, RefreshCw, ScanLine, UserCog, Users } from "lucide-react";
+import { ChartCard, DataTable, shortDate } from "@/components/progress/chart-card";
+import { CheckInChart } from "@/components/progress/charts";
 import { PageHeader, StatCard } from "@/components/stat-card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClass } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
+import { useAttendanceStats } from "@/hooks/use-attendance";
 import { useGym, useGymOverview, useRotateJoinCode } from "@/hooks/use-gym";
 
 function JoinCode({ code }: { code: string }) {
@@ -77,6 +82,7 @@ function JoinCode({ code }: { code: string }) {
 export default function OwnerDashboard() {
   const { data: gym } = useGym();
   const { data: overview, isPending } = useGymOverview();
+  const attendance = useAttendanceStats(14, true);
 
   return (
     <>
@@ -98,10 +104,29 @@ export default function OwnerDashboard() {
         <StatCard index={1} label="Trainers" icon={UserCog} loading={isPending} value={overview?.trainers} />
         <StatCard index={2} label="Staff" icon={IdCard} loading={isPending} value={overview?.staff} />
         <StatCard index={3} label="Monthly revenue" icon={IndianRupee} />
-        <StatCard index={4} label="Today's attendance" icon={CalendarCheck} />
+        <StatCard index={4} label="Today's attendance" icon={CalendarCheck} loading={attendance.isPending} value={attendance.data?.today} hint="members checked in" />
         <StatCard index={5} label="Expiring memberships" icon={CalendarClock} />
       </div>
       {gym?.joinCode ? <JoinCode code={gym.joinCode} /> : null}
+
+      <ChartCard
+        className="mt-6"
+        title="Check-ins"
+        subtitle={
+          attendance.data
+            ? `${attendance.data.daily.reduce((n, d) => n + d.count, 0)} visits over the last 14 days`
+            : "Daily visits over the last 14 days"
+        }
+        actions={
+          <Link href="/front-desk" className={buttonClass({ size: "sm" })}>
+            <ScanLine className="size-4" aria-hidden />
+            Open front desk
+          </Link>
+        }
+        table={<DataTable head={["Day", "Check-ins"]} rows={[...(attendance.data?.daily ?? [])].reverse().map((d) => [shortDate(d.day), d.count])} />}
+      >
+        {attendance.isPending ? <Skeleton className="h-56 w-full" /> : <CheckInChart daily={attendance.data!.daily} />}
+      </ChartCard>
     </>
   );
 }

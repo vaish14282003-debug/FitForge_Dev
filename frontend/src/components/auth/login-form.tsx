@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AuthCard, FormError } from "@/components/auth/auth-card";
+import { AuthCard, FormError, KeepNextLink } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Field, Input, PasswordInput } from "@/components/ui/input";
 import { useLogin } from "@/hooks/use-session";
@@ -29,9 +28,7 @@ export function LoginForm() {
       footer={
         <>
           New to FitForge?{" "}
-          <Link href="/register" className="font-semibold text-foreground underline-offset-4 hover:underline">
-            Create an account
-          </Link>
+          <KeepNextLink href="/register">Create an account</KeepNextLink>
         </>
       }
     >

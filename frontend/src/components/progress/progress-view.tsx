@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Dumbbell, Minus, Plus, Scale, Target, Trash2, Trophy } from "lucide-react";
+import { AttendanceCalendar } from "@/components/progress/attendance-calendar";
 import { ChartCard, ChartEmpty, DataTable, shortDate } from "@/components/progress/chart-card";
 import { StrengthChart, VolumeChart, WeightChart, type StrengthMetric } from "@/components/progress/charts";
 import { GoalDialog, LogMetricDialog } from "@/components/progress/metric-dialogs";
@@ -321,6 +322,8 @@ export function ProgressView({ memberId }: { memberId?: string }) {
         </ChartCard>
         <WeighIns metrics={metrics} editable={editable} />
       </div>
+
+      <AttendanceCalendar memberId={memberId} />
 
       {editable && (
         <>

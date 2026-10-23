@@ -10,6 +10,7 @@ const Exercise = require('../src/models/Exercise');
 const WorkoutPlan = require('../src/models/WorkoutPlan');
 const WorkoutSession = require('../src/models/WorkoutSession');
 const BodyMetric = require('../src/models/BodyMetric');
+const Attendance = require('../src/models/Attendance');
 const { seedDemoProgress } = require('../src/data/demoProgress');
 const { loadExerciseLibrary } = require('../src/data/loadExercises');
 
@@ -19,7 +20,7 @@ async function seed() {
   if (env.isProd) throw new Error('Refusing to seed a production database');
   await connectDb();
   await Promise.all(
-    [User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric].map((model) => model.deleteMany({}))
+    [User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance].map((model) => model.deleteMany({}))
   );
   await loadExerciseLibrary();
 

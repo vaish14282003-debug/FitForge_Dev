@@ -32,7 +32,15 @@ const RULES: Rule[] = [
   { prefix: "/history", allow: (s) => s.user.role === "MEMBER" },
   { prefix: "/progress", allow: (s) => s.user.role === "MEMBER" },
   { prefix: "/clients", allow: (s) => can(s, "clients:read:assigned") },
+  { prefix: "/check-in", allow: (s) => s.user.role === "MEMBER" },
+  { prefix: "/front-desk", allow: (s) => can(s, "members:manage") },
 ];
+
+/** A same-site path from a `next` query param, or null. Rejects "//evil.com" and absolute URLs. */
+export function safeNext(value: string | null): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return null;
+  return value;
+}
 
 export function canVisit(session: Session, pathname: string) {
   const rule = RULES.find((r) => pathname === r.prefix || pathname.startsWith(`${r.prefix}/`));

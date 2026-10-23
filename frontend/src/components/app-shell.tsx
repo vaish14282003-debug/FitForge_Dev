@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ChartLine, ClipboardList, Dumbbell, History, LayoutDashboard, Library, LogOut, Users, type LucideIcon } from "lucide-react";
+import { ChartLine, ClipboardList, Dumbbell, History, LayoutDashboard, Library, LogOut, ScanLine, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { useLogout, useSession } from "@/hooks/use-session";
@@ -23,6 +23,7 @@ const NAV: NavItem[] = [
   { href: "/plans", label: "Plans", icon: ClipboardList },
   { href: "/exercises", label: "Exercises", icon: Library },
   { href: "/team", label: "Team", icon: Users },
+  { href: "/front-desk", label: "Front desk", icon: ScanLine },
 ];
 
 function initials(name: string) {
@@ -53,9 +54,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const allowed = session ? canVisit(session, pathname) : false;
 
   useEffect(() => {
-    if (signedOut) router.replace("/login");
+    if (signedOut) router.replace(`/login?next=${encodeURIComponent(`${pathname}${window.location.search}`)}`);
     else if (session && !allowed) router.replace(ROLE_HOME[session.user.role]);
-  }, [signedOut, session, allowed, router]);
+  }, [signedOut, session, allowed, router, pathname]);
 
   if (isError) {
     return (

@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Crown } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { useSession } from "@/hooks/use-session";
-import { ROLE_HOME } from "@/lib/access";
+import { ROLE_HOME, canVisit, safeNext } from "@/lib/access";
 
 type AuthCardProps = { title: string; subtitle: string; footer: React.ReactNode; children: React.ReactNode };
 
@@ -16,7 +17,10 @@ export function AuthCard({ title, subtitle, footer, children }: AuthCardProps) {
 
   // Covers both "already signed in" and "just signed in": the forms only need to set the session.
   useEffect(() => {
-    if (session) router.replace(ROLE_HOME[session.user.role]);
+    if (!session) return;
+    // Read directly rather than via useSearchParams so these static pages need no Suspense boundary.
+    const next = safeNext(new URLSearchParams(window.location.search).get("next"));
+    router.replace(next && canVisit(session, next.split("?")[0]) ? next : ROLE_HOME[session.user.role]);
   }, [session, router]);
 
   return (
@@ -73,5 +77,22 @@ export function FormError({ message }: { message?: string }) {
     <p role="alert" className="animate-fade-in rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
       {message}
     </p>
+  );
+}
+
+/** Link between login and register that keeps any `?next=` so the visitor still lands where they meant to. */
+export function KeepNextLink({ href, children }: { href: "/login" | "/register"; children: React.ReactNode }) {
+  const router = useRouter();
+  return (
+    <Link
+      href={href}
+      onClick={(e) => {
+        e.preventDefault();
+        router.push(`${href}${window.location.search}`);
+      }}
+      className="font-semibold text-foreground underline-offset-4 hover:underline"
+    >
+      {children}
+    </Link>
   );
 }

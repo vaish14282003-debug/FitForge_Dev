@@ -167,3 +167,22 @@ export type MetricInput = {
   measurements?: Partial<Measurements>;
   note?: string;
 };
+
+export type Attendance = { id: string; member: string; day: string; checkedInAt: string; method: "QR" | "STAFF" };
+
+export type AttendanceSummary = {
+  checkedInToday: boolean;
+  todayAt: string | null;
+  thisMonth: number;
+  last30Days: number;
+  total: number;
+  days: string[];
+};
+
+export type AttendanceStats = {
+  today: number;
+  daily: { day: string; count: number }[];
+  checkIns: (Omit<Attendance, "member"> & { member: UserRef })[];
+};
+
+export type CheckInResult = { attendance: Attendance; alreadyCheckedIn: boolean; member?: { id: string; name: string } };

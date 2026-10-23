@@ -26,7 +26,12 @@ Fitness tracking and gym management for members, trainers and gym owners.
   set) and weekly volume, each with a table view. Trainers and owners open a client's progress
   read-only from their dashboard or the Team page.
 
-Attendance, memberships, scheduling and uploads are not built yet.
+- **Attendance** (step 4): the Front desk page (owners, staff) shows a QR code that changes every
+  minute; members scan it with their phone camera and are checked in (logging in first if needed,
+  then returned to the check-in). Staff can also check members in by hand. Members see visits on
+  their dashboard and a 12-week calendar on Progress; owners see today's count and a 14-day chart.
+
+Memberships, scheduling and uploads are not built yet.
 Dashboard cards for those say "Coming soon".
 
 ### How people get accounts
@@ -49,7 +54,7 @@ cp .env.example .env          # then set JWT_ACCESS_SECRET (command is in the fi
 npm install
 npm run seed                  # optional: demo gym, one account per role, a sample plan (wipes the DB)
 npm run seed:exercises        # adds/updates the built-in exercise library without touching other data
-npm run seed:progress         # adds ~8 weeks of demo workouts and weigh-ins for member@fitforge.dev (non-destructive)
+npm run seed:progress         # adds ~8 weeks of demo workouts, weigh-ins and check-ins for member@fitforge.dev (non-destructive)
 npm run dev                   # API on http://localhost:4000
 
 cd ../frontend
@@ -105,6 +110,10 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | PATCH | `/api/sessions/:id/review` | `clients:read:assigned` |
 | GET | `/api/progress/metrics`, `/training`, `/strength` | Members: own; trainers/owners: `?member=` in scope |
 | PUT, DELETE | `/api/progress/metrics`, `/api/progress/goal` | `workout:log` (members, own data) |
+| GET | `/api/attendance/qr`, `/api/attendance/stats` | `members:manage` (front desk) |
+| POST | `/api/attendance/check-in` | `workout:log` (scanned QR token, valid 2 min) |
+| POST | `/api/attendance` | `members:manage` (manual check-in) |
+| GET | `/api/attendance/summary` | Members: own; trainers: clients; owners/staff: gym |
 
 ## Tech stack: what each piece does here
 
@@ -120,6 +129,7 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | Recharts | The progress charts (body weight, strength, weekly volume) in `src/components/progress/charts.tsx`. |
 | Framer Motion | Page fades, card fade-ups, drag-to-reorder, the rest timer, the workout-complete celebration. |
 | Lucide | Icons. |
+| qrcode | Draws the front-desk check-in QR code as SVG. |
 | next/font | Fraunces (headings) and Plus Jakarta Sans (body), self-hosted at build time. |
 
 **Backend** (`backend/`)
@@ -127,7 +137,7 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | Tool | Its job in FitForge |
 | --- | --- |
 | Express 5 | The HTTP API. `src/routes` maps URLs to `src/controllers`. |
-| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric. |
+| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance. |
 | JWT + bcrypt | Login sessions (`src/utils/tokens.js`) and password hashing. |
 | Joi | Validates every request body and query (`src/validators`). |
 | RBAC map | `src/config/roles.js` says which role has which permission; `authorize()` checks it per route. |

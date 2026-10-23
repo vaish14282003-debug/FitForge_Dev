@@ -1,10 +1,11 @@
 "use client";
 
-import { CalendarCheck, Dumbbell, Flame, Trophy, UserRound } from "lucide-react";
+import { CalendarCheck, Dumbbell, Flame, MapPin, UserRound } from "lucide-react";
 import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TodaysWorkout } from "@/components/workouts/todays-workout";
 import { RecentPrs, WeekActivity } from "@/components/workouts/training-cards";
+import { useAttendanceSummary } from "@/hooks/use-attendance";
 import { useGym } from "@/hooks/use-gym";
 import { useTrainingSummary } from "@/hooks/use-sessions";
 import { useSession } from "@/hooks/use-session";
@@ -16,6 +17,7 @@ export default function MemberDashboard() {
   const { data: gym } = useGym();
   const { data: plans, isPending: plansPending } = usePlans();
   const { data: summary, isPending: summaryPending } = useTrainingSummary();
+  const visits = useAttendanceSummary();
   if (!session) return null;
   const { user } = session;
 
@@ -52,8 +54,19 @@ export default function MemberDashboard() {
           value={summary?.streak}
           hint={streakHint}
         />
-        <StatCard index={1} label="Workouts" icon={Trophy} loading={summaryPending} value={summary?.totalWorkouts} hint="completed in total" />
-        <StatCard index={2} label="This week" icon={CalendarCheck} loading={summaryPending} value={weekCount} hint="workouts in the last 7 days" />
+        <StatCard index={1} label="This week" icon={CalendarCheck} loading={summaryPending} value={weekCount} hint="workouts in the last 7 days" />
+        <StatCard
+          index={2}
+          label="Gym visits"
+          icon={MapPin}
+          loading={visits.isPending}
+          value={visits.data?.thisMonth}
+          hint={
+            visits.data?.checkedInToday && visits.data.todayAt
+              ? `this month · checked in at ${new Date(visits.data.todayAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
+              : "this month · scan the desk QR when you arrive"
+          }
+        />
         <StatCard index={3} label="Your trainer" icon={UserRound} value={user.trainer?.name ?? "Not assigned"} />
       </div>
 

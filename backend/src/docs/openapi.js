@@ -40,6 +40,7 @@ module.exports = {
     { name: 'Plans', description: 'Workout plans: days of exercises, assigned to members' },
     { name: 'Sessions', description: 'Logged workouts, PRs, streaks and trainer reviews' },
     { name: 'Progress', description: 'Body weight and measurements, goals, strength and volume over time' },
+    { name: 'Attendance', description: 'Front-desk QR check-in, manual check-in, visit history and daily counts' },
   ],
   components: {
     securitySchemes: {
@@ -240,6 +241,16 @@ module.exports = {
             },
           },
           note: { type: 'string' },
+        },
+      },
+      Attendance: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          member: { type: 'string' },
+          day: { type: 'string', example: '2026-10-23' },
+          checkedInAt: { type: 'string', format: 'date-time' },
+          method: { type: 'string', enum: ['QR', 'STAFF'] },
         },
       },
       Error: {
@@ -855,6 +866,123 @@ module.exports = {
           401: unauthorized,
           403: forbidden,
           404: errorResponse('No logged sets for this exercise, or member not yours'),
+        },
+      },
+    },
+
+    '/attendance/qr': {
+      get: {
+        tags: ['Attendance'],
+        summary: 'A short-lived check-in token for the front-desk QR code',
+        description: 'Needs `members:manage` (owners, staff). Valid for 2 minutes; the screen refreshes it every minute.',
+        responses: {
+          200: {
+            description: 'Token',
+            content: json({ type: 'object', properties: { token: { type: 'string' }, expiresAt: { type: 'string', format: 'date-time' }, ttlSeconds: { type: 'integer', example: 120 } } }),
+          },
+          401: unauthorized,
+          403: forbidden,
+        },
+      },
+    },
+    '/attendance/check-in': {
+      post: {
+        tags: ['Attendance'],
+        summary: 'Check yourself in with a scanned front-desk code',
+        description: 'Needs `workout:log` (members). One visit per day: a second scan returns the existing visit with `alreadyCheckedIn: true`.',
+        requestBody: {
+          required: true,
+          content: json({ type: 'object', required: ['token'], properties: { token: { type: 'string' }, tz: { type: 'integer', example: -330 } } }),
+        },
+        responses: {
+          201: { description: 'Checked in', content: json({ type: 'object', properties: { attendance: ref('Attendance'), alreadyCheckedIn: { type: 'boolean' } } }) },
+          200: { description: 'Already checked in today', content: json({ type: 'object', properties: { attendance: ref('Attendance'), alreadyCheckedIn: { type: 'boolean' } } }) },
+          400: errorResponse('Code expired, invalid, or for another gym'),
+          401: unauthorized,
+          403: forbidden,
+        },
+      },
+    },
+    '/attendance': {
+      post: {
+        tags: ['Attendance'],
+        summary: 'Check a member in from the front desk',
+        description: 'Needs `members:manage`.',
+        requestBody: {
+          required: true,
+          content: json({ type: 'object', required: ['memberId'], properties: { memberId: { type: 'string' }, tz: { type: 'integer', example: -330 } } }),
+        },
+        responses: {
+          201: { description: 'Checked in', content: json({ type: 'object', properties: { attendance: ref('Attendance'), alreadyCheckedIn: { type: 'boolean' } } }) },
+          200: { description: 'Already checked in today', content: json({ type: 'object', properties: { attendance: ref('Attendance'), alreadyCheckedIn: { type: 'boolean' } } }) },
+          400: badRequest,
+          401: unauthorized,
+          403: forbidden,
+          404: errorResponse('Member not found in this gym'),
+        },
+      },
+    },
+    '/attendance/summary': {
+      get: {
+        tags: ['Attendance'],
+        summary: "A member's visits: today, this month, last 30 days, and the days visited in the last 12 weeks",
+        description: 'Members: their own. Trainers: a client via ?member=. Owners and staff: any member.',
+        parameters: [
+          { name: 'member', in: 'query', schema: { type: 'string' } },
+          { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 }, description: 'Browser timezone offset (minutes)' },
+        ],
+        responses: {
+          200: {
+            description: 'Summary',
+            content: json({
+              type: 'object',
+              properties: {
+                summary: {
+                  type: 'object',
+                  properties: {
+                    checkedInToday: { type: 'boolean' },
+                    todayAt: { type: 'string', format: 'date-time', nullable: true },
+                    thisMonth: { type: 'integer' },
+                    last30Days: { type: 'integer' },
+                    total: { type: 'integer' },
+                    days: { type: 'array', items: { type: 'string' } },
+                  },
+                },
+              },
+            }),
+          },
+          400: badRequest,
+          401: unauthorized,
+          403: forbidden,
+          404: errorResponse('Member not found or not yours'),
+        },
+      },
+    },
+    '/attendance/stats': {
+      get: {
+        tags: ['Attendance'],
+        summary: "Gym check-ins per day, plus today's list",
+        description: 'Needs `members:manage`.',
+        parameters: [{ name: 'tz', in: 'query', schema: { type: 'integer', example: -330 }, description: 'Browser timezone offset (minutes)' }, { name: 'days', in: 'query', schema: { type: 'integer', default: 14, minimum: 7, maximum: 60 } }],
+        responses: {
+          200: {
+            description: 'Stats',
+            content: json({
+              type: 'object',
+              properties: {
+                stats: {
+                  type: 'object',
+                  properties: {
+                    today: { type: 'integer' },
+                    daily: { type: 'array', items: { type: 'object', properties: { day: { type: 'string' }, count: { type: 'integer' } } } },
+                    checkIns: { type: 'array', items: ref('Attendance') },
+                  },
+                },
+              },
+            }),
+          },
+          401: unauthorized,
+          403: forbidden,
         },
       },
     },

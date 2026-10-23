@@ -11,7 +11,10 @@ export function proxy(request: NextRequest) {
   const isAuthPage = AUTH_PAGES.includes(pathname);
 
   if (!hasSession && !isAuthPage) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Remember where they were going (e.g. a scanned check-in link) so login can send them back.
+    const login = new URL("/login", request.url);
+    login.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(login);
   }
   return NextResponse.next();
 }
@@ -28,5 +31,7 @@ export const config = {
     "/history/:path*",
     "/progress/:path*",
     "/clients/:path*",
+    "/check-in/:path*",
+    "/front-desk/:path*",
   ],
 };

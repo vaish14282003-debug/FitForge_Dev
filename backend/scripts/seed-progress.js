@@ -8,7 +8,7 @@ require('../src/models/Exercise');
 const WorkoutPlan = require('../src/models/WorkoutPlan');
 const WorkoutSession = require('../src/models/WorkoutSession');
 const BodyMetric = require('../src/models/BodyMetric');
-const { seedDemoProgress } = require('../src/data/demoProgress');
+const { seedDemoProgress, backfillAttendance } = require('../src/data/demoProgress');
 
 async function run() {
   if (env.isProd) throw new Error('Refusing to add demo data to a production database');
@@ -21,7 +21,8 @@ async function run() {
     BodyMetric.countDocuments({ member: member._id }),
   ]);
   if (sessions > 3 || metrics > 0) {
-    console.log(`Skipped: ${member.email} already has ${sessions} workouts and ${metrics} weigh-ins.`);
+    const visits = await backfillAttendance(member);
+    console.log(`History already present (${sessions} workouts, ${metrics} weigh-ins). Added ${visits} missing check-ins.`);
     return;
   }
 

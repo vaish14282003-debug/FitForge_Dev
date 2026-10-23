@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Building2, CircleCheck, CircleX, Loader2, User } from "lucide-react";
-import { AuthCard, FormError } from "@/components/auth/auth-card";
+import { AuthCard, FormError, KeepNextLink } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { Field, Input, PasswordInput } from "@/components/ui/input";
 import { useGymLookup } from "@/hooks/use-gym";
@@ -97,9 +96,7 @@ export function RegisterForm() {
       footer={
         <>
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-foreground underline-offset-4 hover:underline">
-            Log in
-          </Link>
+          <KeepNextLink href="/login">Log in</KeepNextLink>
         </>
       }
     >

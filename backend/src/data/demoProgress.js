@@ -1,3 +1,4 @@
+const Attendance = require('../models/Attendance');
 const BodyMetric = require('../models/BodyMetric');
 const WorkoutSession = require('../models/WorkoutSession');
 
@@ -99,7 +100,20 @@ async function seedDemoProgress(member, plan) {
   }).filter((m) => m.day < dayString(today));
   await BodyMetric.insertMany(metrics);
 
+  await backfillAttendance(member);
   return { sessions: sessions.length, metrics: metrics.length };
 }
 
-module.exports = { seedDemoProgress };
+/** One check-in on each day the member logged a workout, skipping days already recorded. */
+async function backfillAttendance(member) {
+  const sessions = await WorkoutSession.find({ member: member._id }).select('startedAt').lean();
+  const byDay = new Map(sessions.map((s) => [dayString(s.startedAt), s.startedAt]));
+  const existing = new Set(await Attendance.find({ member: member._id }).distinct('day'));
+  const visits = [...byDay]
+    .filter(([day]) => !existing.has(day))
+    .map(([day, at]) => ({ gym: member.gym, member: member._id, day, checkedInAt: new Date(at.getTime() - 5 * 60 * 1000), method: 'QR' }));
+  if (visits.length) await Attendance.insertMany(visits);
+  return visits.length;
+}
+
+module.exports = { seedDemoProgress, backfillAttendance };

@@ -133,3 +133,27 @@ export function VolumeChart({ weekly }: { weekly: TrainingProgress["weekly"] }) 
     </ResponsiveContainer>
   );
 }
+
+export function CheckInChart({ daily }: { daily: { day: string; count: number }[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={daily} margin={margin} barCategoryGap="20%">
+        <CartesianGrid stroke={CHART.grid} vertical={false} />
+        <XAxis dataKey="day" tickFormatter={shortDate} tick={axisTick} tickLine={false} axisLine={false} minTickGap={16} />
+        <YAxis tick={axisTick} tickLine={false} axisLine={false} width={40} allowDecimals={false} />
+        <Tooltip
+          cursor={{ fill: "rgba(255,255,255,0.04)" }}
+          content={({ active, payload }) =>
+            active && payload?.length ? (
+              <ChartTooltip
+                title={shortDate(payload[0].payload.day)}
+                rows={[{ label: payload[0].value === 1 ? "check-in" : "check-ins", value: String(payload[0].value) }]}
+              />
+            ) : null
+          }
+        />
+        <Bar dataKey="count" fill={CHART.series} radius={[4, 4, 0, 0]} maxBarSize={32} animationDuration={700} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}

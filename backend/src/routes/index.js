@@ -10,5 +10,6 @@ router.use('/exercises', require('./exercise.routes'));
 router.use('/plans', require('./plan.routes'));
 router.use('/sessions', require('./session.routes'));
 router.use('/progress', require('./progress.routes'));
+router.use('/attendance', require('./attendance.routes'));
 
 module.exports = router;
