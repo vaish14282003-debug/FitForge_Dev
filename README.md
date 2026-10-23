@@ -42,7 +42,13 @@ Fitness tracking and gym management for members, trainers and gym owners.
   other devices. Photos appear across the app. Gyms can add photos to their own exercises. Uploads
   are checked to be real images, resized and saved as WebP, and only served to people in the same gym.
 
-Scheduling and notifications are not built yet.
+- **Scheduling** (step 7): trainers set weekly hours and session length; members book open slots
+  with their trainer (double-booking is blocked by a database index), trainers book for clients and
+  mark sessions done or no-show. Trainers and owners create group classes (optionally weekly) with a
+  capacity; members join and leave. Members see "Up next" on their dashboard; trainers see today's
+  sessions.
+
+Notifications and announcements are not built yet.
 
 ### File storage
 
@@ -80,6 +86,7 @@ npm install
 npm run seed                  # optional: demo gym, one account per role, a sample plan (wipes the DB)
 npm run seed:exercises        # adds/updates the built-in exercise library without touching other data
 npm run seed:memberships      # adds plans, demo members and 6 months of membership sales (non-destructive)
+npm run seed:schedule         # adds trainer hours, demo sessions and 3 weeks of classes (non-destructive)
 npm run seed:progress         # adds ~8 weeks of demo workouts, weigh-ins and check-ins for member@fitforge.dev (non-destructive)
 npm run dev                   # API on http://localhost:4000
 
@@ -150,6 +157,13 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | POST | `/api/users/me/password` | Signed in |
 | POST | `/api/exercises/:id/image` | `workout:create` (gym's own exercises) |
 | GET | `/api/files/*` | Signed in, same gym as the file |
+| GET, PUT | `/api/schedule/availability` | Read: members/trainers/owners; write: trainers (own hours) |
+| GET | `/api/schedule/slots`, `/api/schedule/bookings` | Members: own trainer/own; trainers: own; owners: gym |
+| POST | `/api/schedule/bookings`, `/:id/cancel` | Members (own trainer) and trainers (own clients) |
+| PATCH | `/api/schedule/bookings/:id/status` | `workout:create` |
+| GET | `/api/schedule/classes` | Signed in |
+| POST | `/api/schedule/classes`, `/:id/cancel` | `workout:create` |
+| POST | `/api/schedule/classes/:id/join`, `/leave` | `workout:log` (members) |
 
 ## Tech stack: what each piece does here
 
@@ -173,7 +187,7 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | Tool | Its job in FitForge |
 | --- | --- |
 | Express 5 | The HTTP API. `src/routes` maps URLs to `src/controllers`. |
-| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance, MembershipPlan, Membership. |
+| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance, MembershipPlan, Membership, Availability, Booking, GymClass. |
 | JWT + bcrypt | Login sessions (`src/utils/tokens.js`) and password hashing. |
 | Joi | Validates every request body and query (`src/validators`). |
 | RBAC map | `src/config/roles.js` says which role has which permission; `authorize()` checks it per route. |

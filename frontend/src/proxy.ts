@@ -35,5 +35,6 @@ export const config = {
     "/front-desk/:path*",
     "/memberships/:path*",
     "/profile/:path*",
+    "/schedule/:path*",
   ],
 };

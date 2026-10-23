@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CalendarCheck, CircleAlert, CreditCard, Dumbbell, Flame, MapPin } from "lucide-react";
+import Link from "next/link";
+import { CalendarCheck, CalendarDays, ChevronRight, CircleAlert, CreditCard, Dumbbell, Flame, MapPin } from "lucide-react";
 import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TodaysWorkout } from "@/components/workouts/todays-workout";
@@ -9,6 +10,8 @@ import { RecentPrs, WeekActivity } from "@/components/workouts/training-cards";
 import { useAttendanceSummary } from "@/hooks/use-attendance";
 import { useGym } from "@/hooks/use-gym";
 import { useMyMembership } from "@/hooks/use-memberships";
+import { useBookings, useClasses } from "@/hooks/use-schedule";
+import { dayLabel, formatTime } from "@/lib/schedule";
 import { formatDay, STANDING_LABEL } from "@/lib/membership";
 import { useTrainingSummary } from "@/hooks/use-sessions";
 import { useSession } from "@/hooks/use-session";
@@ -22,8 +25,19 @@ export default function MemberDashboard() {
   const { data: summary, isPending: summaryPending } = useTrainingSummary();
   const visits = useAttendanceSummary();
   const membership = useMyMembership();
+  const bookings = useBookings(14);
+  const classes = useClasses(14);
   if (!session) return null;
   const { user } = session;
+
+  // The next thing on the member's calendar: a 1-on-1 or a class they joined.
+  const now = new Date();
+  const nextUp = [
+    ...(bookings.data ?? []).filter((b) => b.status === "BOOKED" && new Date(b.startsAt) > now).map((b) => ({ at: b.startsAt, label: `1-on-1 with ${b.trainer.name}` })),
+    ...(classes.data ?? [])
+      .filter((c) => !c.cancelledAt && c.attendees.includes(user.id) && new Date(c.startsAt) > now)
+      .map((c) => ({ at: c.startsAt, label: `${c.title}${c.location ? ` · ${c.location}` : ""}` })),
+  ].sort((a, b) => a.at.localeCompare(b.at))[0];
 
   const plan = plans?.[0];
   const next = summary?.nextUp.find((n) => n.planId === plan?.id);
@@ -86,6 +100,22 @@ export default function MemberDashboard() {
           }
         />
       </div>
+
+      <Link
+        href="/schedule"
+        className="group mt-6 flex items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 sm:p-5"
+      >
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-sky-500/15 text-sky-300">
+          <CalendarDays className="size-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm text-muted-foreground">Up next</span>
+          <span className="block truncate font-semibold">
+            {nextUp ? `${dayLabel(nextUp.at)}, ${formatTime(nextUp.at)} · ${nextUp.label}` : "Nothing booked. Book a session or join a class"}
+          </span>
+        </span>
+        <ChevronRight className="size-5 text-muted-foreground transition group-hover:translate-x-0.5" aria-hidden />
+      </Link>
 
       {(membership.data?.status === "EXPIRING" || membership.data?.status === "EXPIRED") && (
         <motion.div

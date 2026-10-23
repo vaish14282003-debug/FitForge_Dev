@@ -14,6 +14,10 @@ const Attendance = require('../src/models/Attendance');
 const Membership = require('../src/models/Membership');
 const MembershipPlan = require('../src/models/MembershipPlan');
 const { seedDemoMemberships } = require('../src/data/demoMemberships');
+const Availability = require('../src/models/Availability');
+const Booking = require('../src/models/Booking');
+const GymClass = require('../src/models/GymClass');
+const { seedDemoSchedule } = require('../src/data/demoSchedule');
 const { seedDemoProgress } = require('../src/data/demoProgress');
 const { loadExerciseLibrary } = require('../src/data/loadExercises');
 
@@ -23,7 +27,7 @@ async function seed() {
   if (env.isProd) throw new Error('Refusing to seed a production database');
   await connectDb();
   await Promise.all(
-    [User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance, Membership, MembershipPlan].map((model) => model.deleteMany({}))
+    [User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance, Membership, MembershipPlan, Availability, Booking, GymClass].map((model) => model.deleteMany({}))
   );
   await loadExerciseLibrary();
 
@@ -89,6 +93,7 @@ async function seed() {
   await plan.populate('days.exercises.exercise');
   await seedDemoProgress(member, plan);
   await seedDemoMemberships(gym, owner);
+  await seedDemoSchedule(gym, owner);
 
   console.log(`Seeded gym "${gym.name}" (join code ${gym.joinCode})`);
   console.log(`Accounts: owner@ / trainer@ / staff@ / member@fitforge.dev, password ${PASSWORD}`);

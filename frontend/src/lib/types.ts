@@ -252,3 +252,33 @@ export type MyMembership = {
 };
 
 export type PaymentInput = { status: "PAID" | "PENDING"; method?: PaymentMethod | null; reference?: string };
+
+export type WeeklyBlock = { day: number; start: string; end: string };
+export type Availability = { weekly: WeeklyBlock[]; sessionMinutes: 30 | 45 | 60 | 90 };
+
+export type Slot = { startsAt: string; endsAt: string; available: boolean; yours: boolean };
+export type SlotDays = { trainer: UserRef; sessionMinutes: number; days: { date: string; slots: Slot[] }[] };
+
+export type Booking = {
+  id: string;
+  trainer: UserRef;
+  member: UserRef;
+  startsAt: string;
+  endsAt: string;
+  status: "BOOKED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
+  notes: string;
+};
+
+export type GymClass = {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  trainer: UserRef | null;
+  startsAt: string;
+  endsAt: string;
+  capacity: number;
+  spotsLeft: number;
+  attendees: string[];
+  cancelledAt: string | null;
+};

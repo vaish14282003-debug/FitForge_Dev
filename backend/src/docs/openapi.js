@@ -41,6 +41,7 @@ module.exports = {
     { name: 'Sessions', description: 'Logged workouts, PRs, streaks and trainer reviews' },
     { name: 'Progress', description: 'Body weight and measurements, goals, strength and volume over time' },
     { name: 'Memberships', description: 'Plans and prices, selling and renewing memberships, payments and revenue' },
+    { name: 'Schedule', description: 'Trainer hours, 1-on-1 session booking, and group classes' },
     { name: 'Files', description: 'Uploaded images, served only within the owning gym' },
     { name: 'Attendance', description: 'Front-desk QR check-in, manual check-in, visit history and daily counts' },
   ],
@@ -295,6 +296,34 @@ module.exports = {
           daysLeft: { type: 'integer', nullable: true },
           payment: { allOf: [ref('Payment')], properties: { paidAt: { type: 'string', format: 'date-time', nullable: true } } },
           renewalOf: { type: 'string', nullable: true },
+          cancelledAt: { type: 'string', format: 'date-time', nullable: true },
+        },
+      },
+      Booking: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          trainer: ref('UserRef'),
+          member: ref('UserRef'),
+          startsAt: { type: 'string', format: 'date-time' },
+          endsAt: { type: 'string', format: 'date-time' },
+          status: { type: 'string', enum: ['BOOKED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'] },
+          notes: { type: 'string' },
+        },
+      },
+      GymClass: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string', example: 'HIIT Blast' },
+          description: { type: 'string' },
+          location: { type: 'string', example: 'Studio 1' },
+          trainer: { allOf: [ref('UserRef')], nullable: true },
+          startsAt: { type: 'string', format: 'date-time' },
+          endsAt: { type: 'string', format: 'date-time' },
+          capacity: { type: 'integer', example: 12 },
+          spotsLeft: { type: 'integer', example: 4 },
+          attendees: { type: 'array', items: { type: 'string' }, description: 'Member ids' },
           cancelledAt: { type: 'string', format: 'date-time', nullable: true },
         },
       },
@@ -1243,6 +1272,128 @@ module.exports = {
           'Only for people signed in to the gym the file belongs to. With local storage the file is returned directly; with S3 the response redirects to a signed link valid for 5 minutes. Use the avatarUrl/imageUrl values the API returns rather than building keys.',
         parameters: [{ name: 'key', in: 'path', required: true, schema: { type: 'string' }, description: 'Storage key, e.g. gyms/<gymId>/avatars/<id>.webp' }],
         responses: { 200: { description: 'The file' }, 302: { description: 'Redirect to a signed S3 link' }, 401: unauthorized, 404: errorResponse('File not found or not in your gym') },
+      },
+    },
+
+    '/schedule/availability': {
+      get: {
+        tags: ['Schedule'],
+        summary: "A trainer's weekly hours",
+        description: "Members get their own trainer's; trainers their own; owners pass ?trainer=.",
+        parameters: [{ name: 'trainer', in: 'query', schema: { type: 'string' } }],
+        responses: { 200: { description: 'Availability', content: json({ type: 'object', properties: { availability: { type: 'object', properties: { weekly: { type: 'array', items: { type: 'object', properties: { day: { type: 'integer', minimum: 0, maximum: 6, description: '0 = Sunday' }, start: { type: 'string', example: '07:00' }, end: { type: 'string', example: '11:00' } } } }, sessionMinutes: { type: 'integer', enum: [30, 45, 60, 90] } } }, trainer: ref('UserRef') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+      put: {
+        tags: ['Schedule'],
+        summary: 'Set your weekly hours (trainers)',
+        description: 'Times are the gym\'s local time. Blocks on the same day must not overlap.',
+        requestBody: { required: true, content: json({ type: 'object', required: ['weekly', 'sessionMinutes'], properties: { weekly: { type: 'array', items: { type: 'object', properties: { day: { type: 'integer', minimum: 0, maximum: 6, description: '0 = Sunday' }, start: { type: 'string', example: '07:00' }, end: { type: 'string', example: '11:00' } } } }, sessionMinutes: { type: 'integer', enum: [30, 45, 60, 90] } } }) },
+        responses: { 200: { description: 'Saved' }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/schedule/slots': {
+      get: {
+        tags: ['Schedule'],
+        summary: 'Open and taken session slots for the next days',
+        parameters: [
+          { name: 'trainer', in: 'query', schema: { type: 'string' } },
+          { name: 'from', in: 'query', schema: { type: 'string', example: '2026-10-24' } },
+          { name: 'days', in: 'query', schema: { type: 'integer', default: 7, maximum: 21 } },
+          { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 } },
+        ],
+        responses: { 200: { description: 'Slots by day' }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/schedule/bookings': {
+      get: {
+        tags: ['Schedule'],
+        summary: '1-on-1 sessions in a date range',
+        description: 'Members: their own. Trainers: theirs. Owners: the whole gym.',
+        parameters: [
+          { name: 'from', in: 'query', schema: { type: 'string', format: 'date-time' } },
+          { name: 'to', in: 'query', schema: { type: 'string', format: 'date-time' } },
+          { name: 'member', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: { 200: { description: 'Bookings', content: json({ type: 'object', properties: { bookings: { type: 'array', items: ref('Booking') } } }) }, 401: unauthorized, 403: forbidden },
+      },
+      post: {
+        tags: ['Schedule'],
+        summary: 'Book a session',
+        description: 'Members book their own trainer; trainers book one of their clients (memberId). The time must be one of the trainer\'s slots and free.',
+        requestBody: { required: true, content: json({ type: 'object', required: ['startsAt'], properties: { startsAt: { type: 'string', format: 'date-time' }, memberId: { type: 'string' }, notes: { type: 'string' }, tz: { type: 'integer' } } }) },
+        responses: { 201: { description: 'Booked', content: json({ type: 'object', properties: { booking: ref('Booking') } }) }, 400: errorResponse('Not an available slot, or in the past'), 401: unauthorized, 403: forbidden, 409: errorResponse('Slot just taken, or a clash') },
+      },
+    },
+    '/schedule/bookings/{id}/cancel': {
+      post: {
+        tags: ['Schedule'],
+        summary: 'Cancel a booked session before it starts',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Cancelled', content: json({ type: 'object', properties: { booking: ref('Booking') } }) }, 400: badRequest, 401: unauthorized, 404: errorResponse('Session not found'), 409: errorResponse('Not booked') },
+      },
+    },
+    '/schedule/bookings/{id}/status': {
+      patch: {
+        tags: ['Schedule'],
+        summary: 'Mark a session completed or no-show (trainers, owners)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: json({ type: 'object', required: ['status'], properties: { status: { type: 'string', enum: ['COMPLETED', 'NO_SHOW'] } } }) },
+        responses: { 200: { description: 'Updated', content: json({ type: 'object', properties: { booking: ref('Booking') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Session not found') },
+      },
+    },
+    '/schedule/classes': {
+      get: {
+        tags: ['Schedule'],
+        summary: 'Group classes (from yesterday onward unless from= is given)',
+        parameters: [{ name: 'from', in: 'query', schema: { type: 'string', format: 'date-time' } }, { name: 'to', in: 'query', schema: { type: 'string', format: 'date-time' } }],
+        responses: { 200: { description: 'Classes', content: json({ type: 'object', properties: { classes: { type: 'array', items: ref('GymClass') } } }) }, 401: unauthorized },
+      },
+      post: {
+        tags: ['Schedule'],
+        summary: 'Create a class, optionally repeating weekly',
+        description: 'Needs `workout:create` (trainers, owners).',
+        requestBody: {
+          required: true,
+          content: json({
+            type: 'object',
+            required: ['title', 'startsAt', 'durationMinutes', 'capacity'],
+            properties: {
+              title: { type: 'string', example: 'HIIT Blast' },
+              description: { type: 'string' },
+              location: { type: 'string', example: 'Studio 1' },
+              trainerId: { type: 'string', nullable: true },
+              startsAt: { type: 'string', format: 'date-time' },
+              durationMinutes: { type: 'integer', example: 45 },
+              capacity: { type: 'integer', example: 12 },
+              repeatWeeks: { type: 'integer', example: 4, description: 'How many weekly occurrences to create' },
+            },
+          }),
+        },
+        responses: { 201: { description: 'Created', content: json({ type: 'object', properties: { classes: { type: 'array', items: ref('GymClass') } } }) }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/schedule/classes/{id}/join': {
+      post: {
+        tags: ['Schedule'],
+        summary: 'Join a class (members)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Joined', content: json({ type: 'object', properties: { class: ref('GymClass') } }) }, 400: errorResponse('Already started'), 401: unauthorized, 403: forbidden, 404: errorResponse('Class not found'), 409: errorResponse('Full, cancelled, or already joined') },
+      },
+    },
+    '/schedule/classes/{id}/leave': {
+      post: {
+        tags: ['Schedule'],
+        summary: 'Leave a class before it starts (members)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Left', content: json({ type: 'object', properties: { class: ref('GymClass') } }) }, 401: unauthorized, 403: forbidden, 404: errorResponse('Class not found or started') },
+      },
+    },
+    '/schedule/classes/{id}/cancel': {
+      post: {
+        tags: ['Schedule'],
+        summary: 'Cancel a class (its trainer, creator, or the owner)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Cancelled', content: json({ type: 'object', properties: { class: ref('GymClass') } }) }, 401: unauthorized, 403: forbidden, 404: errorResponse('Class not found') },
       },
     },
   },

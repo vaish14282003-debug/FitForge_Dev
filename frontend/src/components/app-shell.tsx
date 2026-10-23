@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ChartLine, ClipboardList, CreditCard, Dumbbell, History, LayoutDashboard, Library, LogOut, ScanLine, Users, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChartLine, ClipboardList, CreditCard, Dumbbell, History, LayoutDashboard, Library, LogOut, ScanLine, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,11 @@ const NAV: NavItem[] = [
   { href: "/trainer", label: "Dashboard", icon: LayoutDashboard },
   { href: "/owner", label: "Dashboard", icon: LayoutDashboard },
   { href: "/workouts", label: "Workouts", icon: Dumbbell },
+  { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/progress", label: "Progress", icon: ChartLine },
   { href: "/history", label: "History", icon: History },
-  { href: "/plans", label: "Plans", icon: ClipboardList },
+  // Owners reach training plans from their dashboard, keeping their nav to five items.
+  { href: "/plans", label: "Plans", icon: ClipboardList, hide: (s) => can(s, "gym:settings") },
   // Owners reach the library from the Plans page, keeping their nav to five items.
   { href: "/exercises", label: "Exercises", icon: Library, hide: (s) => can(s, "gym:settings") },
   { href: "/team", label: "Team", icon: Users },
