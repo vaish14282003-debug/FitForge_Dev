@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Users, type LucideIcon } from "lucide-react";
+import { ClipboardList, Dumbbell, LayoutDashboard, Library, LogOut, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { useLogout, useSession } from "@/hooks/use-session";
@@ -16,6 +16,9 @@ const NAV: NavItem[] = [
   { href: "/member", label: "Dashboard", icon: LayoutDashboard },
   { href: "/trainer", label: "Dashboard", icon: LayoutDashboard },
   { href: "/owner", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/workouts", label: "Workouts", icon: Dumbbell },
+  { href: "/plans", label: "Plans", icon: ClipboardList },
+  { href: "/exercises", label: "Exercises", icon: Library },
   { href: "/team", label: "Team", icon: Users },
 ];
 
@@ -85,7 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 rounded-full border border-white/10 bg-black/40 py-2 pr-2 pl-4 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl sm:pl-5">
           <Logo href={ROLE_HOME[user.role]} className="text-xl" />
 
-          <nav className="order-last flex w-full justify-center gap-1 sm:order-none sm:w-auto" aria-label="Main">
+          <nav className="order-last -mx-1 flex w-full gap-1 overflow-x-auto px-1 sm:order-none sm:mx-0 sm:w-auto sm:justify-center sm:px-0" aria-label="Main">
             {nav.map(({ href, label, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (
@@ -94,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition duration-200",
+                    "inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition duration-200",
                     active ? "bg-white text-black" : "text-white/70 hover:bg-white/10 hover:text-white",
                   )}
                 >

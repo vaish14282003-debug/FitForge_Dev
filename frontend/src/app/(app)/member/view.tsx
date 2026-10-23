@@ -2,13 +2,16 @@
 
 import { Building2, CalendarCheck, Dumbbell, Flame, UserRound } from "lucide-react";
 import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
+import { TodaysWorkout } from "@/components/workouts/todays-workout";
 import { useGym } from "@/hooks/use-gym";
 import { useSession } from "@/hooks/use-session";
+import { usePlans } from "@/hooks/use-workouts";
 import { firstName, greeting } from "@/lib/utils";
 
 export default function MemberDashboard() {
   const { data: session } = useSession();
   const { data: gym } = useGym();
+  const { data: plans, isPending: plansPending } = usePlans();
   if (!session) return null;
   const { user } = session;
 
@@ -30,9 +33,13 @@ export default function MemberDashboard() {
         <StatCard index={3} label="Attendance" icon={CalendarCheck} />
       </div>
       <div className="mt-6">
-        <EmptyState icon={Dumbbell} title="No workout assigned yet">
-          Once your trainer assigns a plan, today&apos;s workout will show up here.
-        </EmptyState>
+        {plansPending ? null : plans?.[0] ? (
+          <TodaysWorkout plan={plans[0]} />
+        ) : (
+          <EmptyState icon={Dumbbell} title="No workout assigned yet">
+            Once your trainer assigns a plan, today&apos;s workout will show up here.
+          </EmptyState>
+        )}
       </div>
     </>
   );

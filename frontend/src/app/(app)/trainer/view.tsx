@@ -5,11 +5,15 @@ import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
 import { Card } from "@/components/ui/card";
 import { useClients } from "@/hooks/use-gym";
 import { useSession } from "@/hooks/use-session";
+import { usePlans } from "@/hooks/use-workouts";
 import { firstName, greeting } from "@/lib/utils";
 
 export default function TrainerDashboard() {
   const { data: session } = useSession();
   const { data: clients } = useClients();
+  const { data: plans } = usePlans();
+  // A plan counts as active once at least one client is following it.
+  const activePlans = plans?.filter((p) => p.assignedTo.length > 0).length;
   if (!session) return null;
 
   return (
@@ -25,7 +29,7 @@ export default function TrainerDashboard() {
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard index={0} highlight label="My clients" icon={Users} value={clients?.length ?? "…"} />
-        <StatCard index={1} label="Active plans" icon={ClipboardList} />
+        <StatCard index={1} label="Active plans" icon={ClipboardList} value={activePlans ?? "…"} />
         <StatCard index={2} label="Today's sessions" icon={CalendarClock} />
         <StatCard index={3} label="Pending reviews" icon={ClipboardCheck} />
       </div>

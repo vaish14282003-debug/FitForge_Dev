@@ -1,6 +1,8 @@
 // OpenAPI description of the FitForge API, served by Swagger UI at /api/docs.
 // Keep in step with src/routes and src/validators when endpoints change.
 
+const { MUSCLE_GROUPS, EQUIPMENT } = require('../config/exercise');
+
 const errorResponse = (description) => ({
   description,
   content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
@@ -34,6 +36,8 @@ module.exports = {
     { name: 'Auth', description: 'Sign-up, login and session cookies' },
     { name: 'Users', description: 'Profile, team management and trainer clients' },
     { name: 'Gym', description: "The signed-in user's gym" },
+    { name: 'Exercises', description: 'Built-in library plus each gym\'s own exercises' },
+    { name: 'Plans', description: 'Workout plans: days of exercises, assigned to members' },
   ],
   components: {
     securitySchemes: {
@@ -90,6 +94,79 @@ module.exports = {
             example: 'XSVYLDW4',
             description: 'Only returned to roles with gym:settings',
           },
+        },
+      },
+      Exercise: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string', example: 'Barbell Bench Press' },
+          muscleGroup: { type: 'string', enum: MUSCLE_GROUPS },
+          equipment: { type: 'string', enum: EQUIPMENT },
+          instructions: { type: 'string' },
+          imageUrl: { type: 'string', nullable: true },
+          isCustom: { type: 'boolean', description: 'true for exercises a gym added itself' },
+        },
+      },
+      PlanExerciseInput: {
+        type: 'object',
+        required: ['exercise', 'sets', 'reps'],
+        properties: {
+          exercise: { type: 'string', description: 'Exercise id' },
+          sets: { type: 'integer', minimum: 1, maximum: 10, example: 4 },
+          reps: { type: 'string', example: '8-12', description: 'A number or a range' },
+          weight: { type: 'number', nullable: true, example: 40, description: 'kg' },
+          restSeconds: { type: 'integer', example: 90 },
+          notes: { type: 'string', example: 'Pause at the bottom' },
+        },
+      },
+      PlanInput: {
+        type: 'object',
+        required: ['name', 'days'],
+        properties: {
+          name: { type: 'string', example: 'Push Pull Legs' },
+          description: { type: 'string', example: 'Three-day split' },
+          days: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 7,
+            items: {
+              type: 'object',
+              required: ['name', 'exercises'],
+              properties: {
+                name: { type: 'string', example: 'Push' },
+                exercises: { type: 'array', minItems: 1, items: ref('PlanExerciseInput') },
+              },
+            },
+          },
+        },
+      },
+      WorkoutPlan: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          createdBy: ref('UserRef'),
+          assignedTo: { type: 'array', items: ref('UserRef') },
+          days: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                exercises: {
+                  type: 'array',
+                  items: {
+                    allOf: [ref('PlanExerciseInput')],
+                    properties: { exercise: ref('Exercise') },
+                  },
+                },
+              },
+            },
+          },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
       },
       Error: {
@@ -351,6 +428,106 @@ module.exports = {
           },
           401: unauthorized,
           403: forbidden,
+        },
+      },
+    },
+
+    '/exercises': {
+      get: {
+        tags: ['Exercises'],
+        summary: 'List exercises: the built-in library plus your gym\'s own',
+        parameters: [
+          { name: 'muscleGroup', in: 'query', schema: { type: 'string', enum: MUSCLE_GROUPS } },
+          { name: 'q', in: 'query', description: 'Search by name', schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'Exercises', content: json({ type: 'object', properties: { exercises: { type: 'array', items: ref('Exercise') } } }) },
+          401: unauthorized,
+        },
+      },
+      post: {
+        tags: ['Exercises'],
+        summary: 'Add a custom exercise to your gym',
+        description: 'Needs `workout:create` (trainers and owners).',
+        requestBody: {
+          required: true,
+          content: json({
+            type: 'object',
+            required: ['name', 'muscleGroup', 'equipment'],
+            properties: {
+              name: { type: 'string', example: 'Landmine Press' },
+              muscleGroup: { type: 'string', enum: MUSCLE_GROUPS },
+              equipment: { type: 'string', enum: EQUIPMENT },
+              instructions: { type: 'string' },
+            },
+          }),
+        },
+        responses: {
+          201: { description: 'Created', content: json({ type: 'object', properties: { exercise: ref('Exercise') } }) },
+          400: badRequest,
+          401: unauthorized,
+          403: forbidden,
+          409: errorResponse('An exercise with this name already exists'),
+        },
+      },
+    },
+    '/plans': {
+      get: {
+        tags: ['Plans'],
+        summary: 'Workout plans you can see',
+        description: 'Owners: every plan in the gym. Trainers: plans they created. Members: plans assigned to them.',
+        responses: {
+          200: { description: 'Plans', content: json({ type: 'object', properties: { plans: { type: 'array', items: ref('WorkoutPlan') } } }) },
+          401: unauthorized,
+        },
+      },
+      post: {
+        tags: ['Plans'],
+        summary: 'Create a workout plan',
+        description: 'Needs `workout:create`.',
+        requestBody: { required: true, content: json(ref('PlanInput')) },
+        responses: { 201: { description: 'Created', content: json({ type: 'object', properties: { plan: ref('WorkoutPlan') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/plans/{id}': {
+      get: {
+        tags: ['Plans'],
+        summary: 'One plan, with exercises filled in',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Plan', content: json({ type: 'object', properties: { plan: ref('WorkoutPlan') } }) }, 401: unauthorized, 404: errorResponse('Plan not found') },
+      },
+      put: {
+        tags: ['Plans'],
+        summary: 'Replace a plan\'s name, description and days',
+        description: 'Needs `workout:create`. Trainers can edit their own plans; owners can edit any plan in the gym.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: json(ref('PlanInput')) },
+        responses: { 200: { description: 'Updated', content: json({ type: 'object', properties: { plan: ref('WorkoutPlan') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Plan not found') },
+      },
+      delete: {
+        tags: ['Plans'],
+        summary: 'Delete a plan',
+        description: 'Needs `workout:create`. Same ownership rules as editing.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 204: { description: 'Deleted' }, 401: unauthorized, 403: forbidden, 404: errorResponse('Plan not found') },
+      },
+    },
+    '/plans/{id}/assignees': {
+      put: {
+        tags: ['Plans'],
+        summary: 'Set which members follow this plan',
+        description: 'Needs `workout:assign`. Replaces the whole list. Trainers can only assign their own clients.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: {
+          required: true,
+          content: json({ type: 'object', required: ['memberIds'], properties: { memberIds: { type: 'array', items: { type: 'string' } } } }),
+        },
+        responses: {
+          200: { description: 'Updated', content: json({ type: 'object', properties: { plan: ref('WorkoutPlan') } }) },
+          400: errorResponse('Validation failed, or a member is not yours to assign'),
+          401: unauthorized,
+          403: forbidden,
+          404: errorResponse('Plan not found'),
         },
       },
     },

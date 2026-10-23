@@ -23,7 +23,17 @@ export function AuthCard({ title, subtitle, footer, children }: AuthCardProps) {
     <div className="grid flex-1 lg:grid-cols-2">
       {/* Same photo and type as the landing hero, so signing in feels like the same product. */}
       <aside className="relative hidden overflow-hidden bg-background text-white lg:flex lg:flex-col lg:justify-between lg:p-16">
-        <Image src="/hero-gym.webp" alt="" fill quality={90} sizes="50vw" className="object-cover" aria-hidden />
+        <Image
+          src="/hero-gym.webp"
+          alt=""
+          fill
+          loading="eager"
+          fetchPriority="high"
+          quality={90}
+          sizes="50vw"
+          className="object-cover"
+          aria-hidden
+        />
         <div className="absolute inset-0 bg-linear-to-t from-background via-red-950/40 to-black/40" aria-hidden />
         <Logo className="relative text-white" />
         <div className="relative">

@@ -46,7 +46,15 @@ export function StatCard({ label, value, icon: Icon, index = 0, highlight = fals
             Coming soon
           </p>
         ) : (
-          <p className="font-display mt-3 truncate text-4xl font-semibold tracking-tight sm:text-5xl">{value}</p>
+          <p
+            className={cn(
+              "font-display mt-3 font-semibold tracking-tight",
+              // Numbers get the big treatment; names wrap instead of being cut off.
+              typeof value === "number" ? "text-4xl sm:text-5xl" : "line-clamp-2 text-2xl leading-tight sm:text-3xl",
+            )}
+          >
+            {value}
+          </p>
         )}
       </Card>
     </motion.div>
