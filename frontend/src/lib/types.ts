@@ -10,7 +10,9 @@ export type Permission =
   | "members:manage"
   | "trainers:manage"
   | "revenue:read"
-  | "gym:settings";
+  | "gym:settings"
+  | "workout:log"
+  | "memberships:manage";
 
 export type UserRef = { id: string; name: string; email: string };
 
@@ -186,3 +188,60 @@ export type AttendanceStats = {
 };
 
 export type CheckInResult = { attendance: Attendance; alreadyCheckedIn: boolean; member?: { id: string; name: string } };
+
+export type MembershipPlan = {
+  id: string;
+  name: string;
+  durationMonths: number;
+  price: number;
+  description: string;
+  isActive: boolean;
+};
+
+export type PaymentMethod = "CASH" | "UPI" | "CARD" | "BANK" | "OTHER";
+
+export type Membership = {
+  id: string;
+  member: string | UserRef;
+  plan: string;
+  planName: string;
+  durationMonths: number;
+  price: number;
+  startDate: string;
+  endDate: string;
+  status: "UPCOMING" | "ACTIVE" | "EXPIRED" | "CANCELLED";
+  daysLeft: number | null;
+  payment: { status: "PAID" | "PENDING"; method: PaymentMethod | null; reference: string; paidAt: string | null };
+  renewalOf: string | null;
+  cancelledAt: string | null;
+};
+
+export type Standing = "ACTIVE" | "EXPIRING" | "UPCOMING" | "EXPIRED" | "NONE";
+
+export type RosterEntry = {
+  member: { id: string; name: string; email: string; isActive: boolean };
+  status: Standing;
+  current: Membership | null;
+  upcoming: Membership | null;
+  latest: Membership | null;
+  pendingPayments: number;
+};
+
+export type MembershipOverview = {
+  activeMembers: number;
+  expiringSoon: (Membership & { member: UserRef })[];
+  expiringDays: number;
+  recentlyExpired: number;
+  pendingPayments: { count: number; amount: number };
+  revenue?: { thisMonth: number; lastMonth: number; months: { month: string; amount: number; count: number }[] };
+};
+
+export type MyMembership = {
+  status: Standing;
+  current: Membership | null;
+  upcoming: Membership | null;
+  latest: Membership | null;
+  history: Membership[];
+};
+
+export type PaymentInput = { status: "PAID" | "PENDING"; method?: PaymentMethod | null; reference?: string };

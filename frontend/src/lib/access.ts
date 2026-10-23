@@ -34,6 +34,7 @@ const RULES: Rule[] = [
   { prefix: "/clients", allow: (s) => can(s, "clients:read:assigned") },
   { prefix: "/check-in", allow: (s) => s.user.role === "MEMBER" },
   { prefix: "/front-desk", allow: (s) => can(s, "members:manage") },
+  { prefix: "/memberships", allow: (s) => can(s, "memberships:manage") },
 ];
 
 /** A same-site path from a `next` query param, or null. Rejects "//evil.com" and absolute URLs. */

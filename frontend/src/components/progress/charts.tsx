@@ -157,3 +157,35 @@ export function CheckInChart({ daily }: { daily: { day: string; count: number }[
     </ResponsiveContainer>
   );
 }
+
+const monthLabel = (month: string) => new Date(`${month}-15T12:00:00`).toLocaleDateString(undefined, { month: "short" });
+const inrShort = (v: number) => (v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : v >= 1000 ? `₹${Math.round(v / 1000)}k` : `₹${v}`);
+
+export function RevenueChart({ months }: { months: { month: string; amount: number; count: number }[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <BarChart data={months} margin={margin} barCategoryGap="28%">
+        <CartesianGrid stroke={CHART.grid} vertical={false} />
+        <XAxis dataKey="month" tickFormatter={monthLabel} tick={axisTick} tickLine={false} axisLine={false} />
+        <YAxis tick={axisTick} tickLine={false} axisLine={false} width={58} tickFormatter={inrShort} />
+        <Tooltip
+          cursor={{ fill: "rgba(255,255,255,0.04)" }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const row = payload[0].payload as { month: string; amount: number; count: number };
+            return (
+              <ChartTooltip
+                title={new Date(`${row.month}-15T12:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+                rows={[
+                  { label: "collected", value: `₹${row.amount.toLocaleString("en-IN")}` },
+                  { label: row.count === 1 ? "payment" : "payments", value: String(row.count) },
+                ]}
+              />
+            );
+          }}
+        />
+        <Bar dataKey="amount" fill={CHART.series} radius={[4, 4, 0, 0]} maxBarSize={44} animationDuration={700} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}

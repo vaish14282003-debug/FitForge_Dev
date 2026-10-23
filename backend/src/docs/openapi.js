@@ -40,6 +40,7 @@ module.exports = {
     { name: 'Plans', description: 'Workout plans: days of exercises, assigned to members' },
     { name: 'Sessions', description: 'Logged workouts, PRs, streaks and trainer reviews' },
     { name: 'Progress', description: 'Body weight and measurements, goals, strength and volume over time' },
+    { name: 'Memberships', description: 'Plans and prices, selling and renewing memberships, payments and revenue' },
     { name: 'Attendance', description: 'Front-desk QR check-in, manual check-in, visit history and daily counts' },
   ],
   components: {
@@ -251,6 +252,44 @@ module.exports = {
           day: { type: 'string', example: '2026-10-23' },
           checkedInAt: { type: 'string', format: 'date-time' },
           method: { type: 'string', enum: ['QR', 'STAFF'] },
+        },
+      },
+      MembershipPlan: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string', example: 'Quarterly' },
+          durationMonths: { type: 'integer', example: 3 },
+          price: { type: 'integer', example: 4000, description: 'Whole rupees' },
+          description: { type: 'string' },
+          isActive: { type: 'boolean' },
+        },
+      },
+      Payment: {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: { type: 'string', enum: ['PAID', 'PENDING'] },
+          method: { type: 'string', enum: ['CASH', 'UPI', 'CARD', 'BANK', 'OTHER'], nullable: true, description: 'Required when PAID' },
+          reference: { type: 'string', example: 'UPI ref 4821' },
+        },
+      },
+      Membership: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          member: { type: 'string' },
+          plan: { type: 'string' },
+          planName: { type: 'string', example: 'Quarterly' },
+          durationMonths: { type: 'integer' },
+          price: { type: 'integer' },
+          startDate: { type: 'string', example: '2026-10-01' },
+          endDate: { type: 'string', example: '2026-12-31' },
+          status: { type: 'string', enum: ['UPCOMING', 'ACTIVE', 'EXPIRED', 'CANCELLED'] },
+          daysLeft: { type: 'integer', nullable: true },
+          payment: { allOf: [ref('Payment')], properties: { paidAt: { type: 'string', format: 'date-time', nullable: true } } },
+          renewalOf: { type: 'string', nullable: true },
+          cancelledAt: { type: 'string', format: 'date-time', nullable: true },
         },
       },
       Error: {
@@ -984,6 +1023,151 @@ module.exports = {
           401: unauthorized,
           403: forbidden,
         },
+      },
+    },
+
+    '/membership-plans': {
+      get: {
+        tags: ['Memberships'],
+        summary: "The gym's membership plans",
+        description: 'Members see plans on sale; owners and staff also see archived ones.',
+        responses: { 200: { description: 'Plans', content: json({ type: 'object', properties: { plans: { type: 'array', items: ref('MembershipPlan') } } }) }, 401: unauthorized },
+      },
+      post: {
+        tags: ['Memberships'],
+        summary: 'Create a plan',
+        description: 'Needs `gym:settings` (owners).',
+        requestBody: {
+          required: true,
+          content: json({
+            type: 'object',
+            required: ['name', 'durationMonths', 'price'],
+            properties: { name: { type: 'string', example: 'Quarterly' }, durationMonths: { type: 'integer', example: 3 }, price: { type: 'integer', example: 4000 }, description: { type: 'string' } },
+          }),
+        },
+        responses: { 201: { description: 'Created', content: json({ type: 'object', properties: { plan: ref('MembershipPlan') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/membership-plans/{id}': {
+      patch: {
+        tags: ['Memberships'],
+        summary: 'Rename, reprice or archive a plan',
+        description: 'Needs `gym:settings`. Existing memberships keep the price they were sold at.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: json({ type: 'object', properties: { name: { type: 'string' }, price: { type: 'integer' }, description: { type: 'string' }, isActive: { type: 'boolean' } } }) },
+        responses: { 200: { description: 'Updated', content: json({ type: 'object', properties: { plan: ref('MembershipPlan') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Plan not found') },
+      },
+    },
+    '/memberships': {
+      get: {
+        tags: ['Memberships'],
+        summary: 'Membership history, newest first',
+        description: 'Needs `memberships:manage` (owners, staff).',
+        parameters: [{ name: 'member', in: 'query', schema: { type: 'string' } }, { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 }, description: 'Browser timezone offset (minutes)' }],
+        responses: { 200: { description: 'Memberships', content: json({ type: 'object', properties: { memberships: { type: 'array', items: ref('Membership') } } }) }, 401: unauthorized, 403: forbidden },
+      },
+      post: {
+        tags: ['Memberships'],
+        summary: 'Sell a membership to a member',
+        description: 'Needs `memberships:manage`. Starts today unless startDate is given; must not overlap another live membership.',
+        requestBody: {
+          required: true,
+          content: json({
+            type: 'object',
+            required: ['memberId', 'planId', 'payment'],
+            properties: { memberId: { type: 'string' }, planId: { type: 'string' }, startDate: { type: 'string', example: '2026-10-23' }, payment: ref('Payment'), notes: { type: 'string' }, tz: { type: 'integer' } },
+          }),
+        },
+        responses: {
+          201: { description: 'Sold', content: json({ type: 'object', properties: { membership: ref('Membership') } }) },
+          400: errorResponse('Validation failed, or plan archived'),
+          401: unauthorized,
+          403: forbidden,
+          404: errorResponse('Member or plan not found'),
+          409: errorResponse('Overlaps an existing membership'),
+        },
+      },
+    },
+    '/memberships/{id}/renew': {
+      post: {
+        tags: ['Memberships'],
+        summary: "Renew: a new period starting the day after the member's latest one ends (or today if lapsed)",
+        description: 'Needs `memberships:manage`. Uses the same plan unless planId is given.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: json({ type: 'object', required: ['payment'], properties: { planId: { type: 'string' }, payment: ref('Payment'), notes: { type: 'string' }, tz: { type: 'integer' } } }) },
+        responses: { 201: { description: 'Renewed', content: json({ type: 'object', properties: { membership: ref('Membership') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Membership not found') },
+      },
+    },
+    '/memberships/{id}/payment': {
+      patch: {
+        tags: ['Memberships'],
+        summary: 'Record payment for a pending membership',
+        description: 'Needs `memberships:manage`.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: json({ type: 'object', required: ['method'], properties: { method: { type: 'string', enum: ['CASH', 'UPI', 'CARD', 'BANK', 'OTHER'] }, reference: { type: 'string' } } }) },
+        responses: { 200: { description: 'Paid', content: json({ type: 'object', properties: { membership: ref('Membership') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Membership not found'), 409: errorResponse('Already paid') },
+      },
+    },
+    '/memberships/{id}/cancel': {
+      post: {
+        tags: ['Memberships'],
+        summary: 'Cancel a membership',
+        description: 'Needs `memberships:manage`. Cancelled memberships no longer count as active or towards revenue.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Cancelled', content: json({ type: 'object', properties: { membership: ref('Membership') } }) }, 401: unauthorized, 403: forbidden, 404: errorResponse('Membership not found') },
+      },
+    },
+    '/memberships/roster': {
+      get: {
+        tags: ['Memberships'],
+        summary: 'Every member with their membership standing',
+        description: 'Needs `memberships:manage`. Status is ACTIVE, EXPIRING (within 7 days, nothing booked after), UPCOMING, EXPIRED or NONE.',
+        parameters: [{ name: 'tz', in: 'query', schema: { type: 'integer', example: -330 }, description: 'Browser timezone offset (minutes)' }],
+        responses: {
+          200: {
+            description: 'Roster',
+            content: json({
+              type: 'object',
+              properties: {
+                roster: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      member: ref('UserRef'),
+                      status: { type: 'string', enum: ['ACTIVE', 'EXPIRING', 'UPCOMING', 'EXPIRED', 'NONE'] },
+                      current: { allOf: [ref('Membership')], nullable: true },
+                      upcoming: { allOf: [ref('Membership')], nullable: true },
+                      latest: { allOf: [ref('Membership')], nullable: true },
+                      pendingPayments: { type: 'integer' },
+                    },
+                  },
+                },
+                expiringDays: { type: 'integer', example: 7 },
+              },
+            }),
+          },
+          401: unauthorized,
+          403: forbidden,
+        },
+      },
+    },
+    '/memberships/overview': {
+      get: {
+        tags: ['Memberships'],
+        summary: 'Active members, memberships expiring soon, pending payments, and (owners) revenue',
+        description: 'Needs `memberships:manage`. The revenue block is included only with `revenue:read`.',
+        parameters: [{ name: 'tz', in: 'query', schema: { type: 'integer', example: -330 }, description: 'Browser timezone offset (minutes)' }],
+        responses: { 200: { description: 'Overview', content: json({ type: 'object', properties: { overview: { type: 'object' } } }) }, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/memberships/me': {
+      get: {
+        tags: ['Memberships'],
+        summary: 'Your membership: current, upcoming, and history',
+        description: 'Needs `workout:log` (members).',
+        parameters: [{ name: 'tz', in: 'query', schema: { type: 'integer', example: -330 }, description: 'Browser timezone offset (minutes)' }],
+        responses: { 200: { description: 'Your membership', content: json({ type: 'object', properties: { status: { type: 'string' }, current: { allOf: [ref('Membership')], nullable: true }, history: { type: 'array', items: ref('Membership') } } }) }, 401: unauthorized, 403: forbidden },
       },
     },
   },

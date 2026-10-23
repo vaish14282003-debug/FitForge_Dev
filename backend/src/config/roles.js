@@ -14,6 +14,8 @@ const PERMISSIONS = Object.freeze({
   WORKOUT_LOG: 'workout:log',
   CLIENTS_READ_ASSIGNED: 'clients:read:assigned',
   MEMBERS_MANAGE: 'members:manage',
+  // Selling and renewing memberships and recording payments; plan prices stay with gym:settings.
+  MEMBERSHIPS_MANAGE: 'memberships:manage',
   TRAINERS_MANAGE: 'trainers:manage',
   REVENUE_READ: 'revenue:read',
   GYM_SETTINGS: 'gym:settings',
@@ -28,7 +30,7 @@ const ROLE_PERMISSIONS = Object.freeze({
   // Owners and admins run the gym; they don't log workouts of their own.
   [ROLES.GYM_OWNER]: Object.values(P).filter((p) => p !== P.WORKOUT_LOG),
   [ROLES.TRAINER]: [...own, P.WORKOUT_CREATE, P.WORKOUT_ASSIGN, P.CLIENTS_READ_ASSIGNED],
-  [ROLES.STAFF]: [...own, P.MEMBERS_MANAGE],
+  [ROLES.STAFF]: [...own, P.MEMBERS_MANAGE, P.MEMBERSHIPS_MANAGE],
   [ROLES.MEMBER]: [...own, P.WORKOUT_LOG],
 });
 

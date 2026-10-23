@@ -4,14 +4,16 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ChartLine, ClipboardList, Dumbbell, History, LayoutDashboard, Library, LogOut, ScanLine, Users, type LucideIcon } from "lucide-react";
+import { ChartLine, ClipboardList, CreditCard, Dumbbell, History, LayoutDashboard, Library, LogOut, ScanLine, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { useLogout, useSession } from "@/hooks/use-session";
-import { ROLE_HOME, ROLE_LABEL, canVisit } from "@/lib/access";
+import { ROLE_HOME, ROLE_LABEL, can, canVisit } from "@/lib/access";
+import type { Session } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+// `hide` trims the nav for roles with many pages; the page itself stays reachable.
+type NavItem = { href: string; label: string; icon: LucideIcon; hide?: (session: Session) => boolean };
 
 const NAV: NavItem[] = [
   { href: "/member", label: "Dashboard", icon: LayoutDashboard },
@@ -21,8 +23,10 @@ const NAV: NavItem[] = [
   { href: "/progress", label: "Progress", icon: ChartLine },
   { href: "/history", label: "History", icon: History },
   { href: "/plans", label: "Plans", icon: ClipboardList },
-  { href: "/exercises", label: "Exercises", icon: Library },
+  // Owners reach the library from the Plans page, keeping their nav to five items.
+  { href: "/exercises", label: "Exercises", icon: Library, hide: (s) => can(s, "gym:settings") },
   { href: "/team", label: "Team", icon: Users },
+  { href: "/memberships", label: "Memberships", icon: CreditCard },
   { href: "/front-desk", label: "Front desk", icon: ScanLine },
 ];
 
@@ -82,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const { user } = session;
-  const nav = NAV.filter((item) => canVisit(session, item.href));
+  const nav = NAV.filter((item) => canVisit(session, item.href) && !item.hide?.(session));
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (

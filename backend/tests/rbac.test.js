@@ -20,6 +20,7 @@ describe('permission matrix', () => {
     [P.REVENUE_READ, false, false, true],
     [P.GYM_SETTINGS, false, false, true],
     [P.WORKOUT_LOG, true, false, false],
+    [P.MEMBERSHIPS_MANAGE, false, false, true],
   ];
 
   it.each(matrix)('%s', (permission, member, trainer, owner) => {

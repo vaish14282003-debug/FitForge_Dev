@@ -11,5 +11,8 @@ router.use('/plans', require('./plan.routes'));
 router.use('/sessions', require('./session.routes'));
 router.use('/progress', require('./progress.routes'));
 router.use('/attendance', require('./attendance.routes'));
+const membershipRoutes = require('./membership.routes');
+router.use('/membership-plans', membershipRoutes.plans);
+router.use('/memberships', membershipRoutes.memberships);
 
 module.exports = router;

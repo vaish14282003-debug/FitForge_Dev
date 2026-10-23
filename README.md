@@ -31,7 +31,13 @@ Fitness tracking and gym management for members, trainers and gym owners.
   then returned to the check-in). Staff can also check members in by hand. Members see visits on
   their dashboard and a 12-week calendar on Progress; owners see today's count and a 14-day chart.
 
-Memberships, scheduling and uploads are not built yet.
+- **Memberships** (step 5): owners set plans and prices; owners and front-desk staff sell and renew
+  memberships (renewals continue the day after the current one ends), record payments (UPI, cash,
+  card, bank) or leave them pending, and cancel. The Memberships page lists every member by status
+  (expiring, expired, no membership, payment due). Owners see monthly revenue and a 6-month chart;
+  members see their membership and a reminder when it's about to end.
+
+Scheduling and uploads are not built yet.
 Dashboard cards for those say "Coming soon".
 
 ### How people get accounts
@@ -54,6 +60,7 @@ cp .env.example .env          # then set JWT_ACCESS_SECRET (command is in the fi
 npm install
 npm run seed                  # optional: demo gym, one account per role, a sample plan (wipes the DB)
 npm run seed:exercises        # adds/updates the built-in exercise library without touching other data
+npm run seed:memberships      # adds plans, demo members and 6 months of membership sales (non-destructive)
 npm run seed:progress         # adds ~8 weeks of demo workouts, weigh-ins and check-ins for member@fitforge.dev (non-destructive)
 npm run dev                   # API on http://localhost:4000
 
@@ -114,6 +121,12 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | POST | `/api/attendance/check-in` | `workout:log` (scanned QR token, valid 2 min) |
 | POST | `/api/attendance` | `members:manage` (manual check-in) |
 | GET | `/api/attendance/summary` | Members: own; trainers: clients; owners/staff: gym |
+| GET | `/api/membership-plans` | Signed in (members see plans on sale) |
+| POST, PATCH | `/api/membership-plans` | `gym:settings` (owners set prices) |
+| GET | `/api/memberships`, `/roster`, `/overview` | `memberships:manage` (revenue in overview needs `revenue:read`) |
+| POST | `/api/memberships`, `/:id/renew`, `/:id/cancel` | `memberships:manage` |
+| PATCH | `/api/memberships/:id/payment` | `memberships:manage` |
+| GET | `/api/memberships/me` | `workout:log` (members) |
 
 ## Tech stack: what each piece does here
 
@@ -137,7 +150,7 @@ run `POST /auth/login` first: the session cookie it sets is sent with every late
 | Tool | Its job in FitForge |
 | --- | --- |
 | Express 5 | The HTTP API. `src/routes` maps URLs to `src/controllers`. |
-| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance. |
+| MongoDB + Mongoose | Database and models (`src/models`): User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance, MembershipPlan, Membership. |
 | JWT + bcrypt | Login sessions (`src/utils/tokens.js`) and password hashing. |
 | Joi | Validates every request body and query (`src/validators`). |
 | RBAC map | `src/config/roles.js` says which role has which permission; `authorize()` checks it per route. |

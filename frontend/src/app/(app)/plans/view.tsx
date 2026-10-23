@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ClipboardList, Clock, Dumbbell, Layers, Plus } from "lucide-react";
+import { ArrowUpRight, ClipboardList, Clock, Dumbbell, Layers, Library, Plus } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/stat-card";
 import { buttonClass } from "@/components/ui/button";
 import { Tag } from "@/components/workouts/exercise-bits";
@@ -39,10 +39,16 @@ export default function PlansList() {
   const ownerLevel = !!session && can(session, "gym:settings");
 
   const newPlan = (
-    <Link href="/plans/new" className={buttonClass()}>
-      <Plus className="size-4" aria-hidden />
-      New plan
-    </Link>
+    <div className="flex flex-wrap gap-2">
+      <Link href="/exercises" className={buttonClass({ variant: "outline" })}>
+        <Library className="size-4" aria-hidden />
+        Exercise library
+      </Link>
+      <Link href="/plans/new" className={buttonClass()}>
+        <Plus className="size-4" aria-hidden />
+        New plan
+      </Link>
+    </div>
   );
 
   return (

@@ -33,5 +33,6 @@ export const config = {
     "/clients/:path*",
     "/check-in/:path*",
     "/front-desk/:path*",
+    "/memberships/:path*",
   ],
 };

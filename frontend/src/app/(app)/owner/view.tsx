@@ -5,13 +5,16 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { CalendarCheck, CalendarClock, Check, Copy, IdCard, IndianRupee, RefreshCw, ScanLine, UserCog, Users } from "lucide-react";
 import { ChartCard, DataTable, shortDate } from "@/components/progress/chart-card";
-import { CheckInChart } from "@/components/progress/charts";
+import { CheckInChart, RevenueChart } from "@/components/progress/charts";
 import { PageHeader, StatCard } from "@/components/stat-card";
 import { Button, buttonClass } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { useAttendanceStats } from "@/hooks/use-attendance";
 import { useGym, useGymOverview, useRotateJoinCode } from "@/hooks/use-gym";
+import { useMembershipOverview } from "@/hooks/use-memberships";
+import { formatDay, formatINR } from "@/lib/membership";
 
 function JoinCode({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
@@ -83,6 +86,9 @@ export default function OwnerDashboard() {
   const { data: gym } = useGym();
   const { data: overview, isPending } = useGymOverview();
   const attendance = useAttendanceStats(14, true);
+  const memberships = useMembershipOverview();
+  const revenue = memberships.data?.revenue;
+  const revenueChange = revenue ? revenue.thisMonth - revenue.lastMonth : 0;
 
   return (
     <>
@@ -103,10 +109,68 @@ export default function OwnerDashboard() {
         <StatCard index={0} highlight label="Members" icon={Users} loading={isPending} value={overview?.members} />
         <StatCard index={1} label="Trainers" icon={UserCog} loading={isPending} value={overview?.trainers} />
         <StatCard index={2} label="Staff" icon={IdCard} loading={isPending} value={overview?.staff} />
-        <StatCard index={3} label="Monthly revenue" icon={IndianRupee} />
+        <StatCard
+          index={3}
+          label="Monthly revenue"
+          icon={IndianRupee}
+          loading={memberships.isPending}
+          value={revenue ? formatINR(revenue.thisMonth) : undefined}
+          hint={revenue ? `${revenueChange >= 0 ? "+" : "−"}${formatINR(Math.abs(revenueChange))} vs last month` : undefined}
+        />
         <StatCard index={4} label="Today's attendance" icon={CalendarCheck} loading={attendance.isPending} value={attendance.data?.today} hint="members checked in" />
-        <StatCard index={5} label="Expiring memberships" icon={CalendarClock} />
+        <StatCard
+          index={5}
+          label="Expiring memberships"
+          icon={CalendarClock}
+          loading={memberships.isPending}
+          value={memberships.data?.expiringSoon.length}
+          hint={memberships.data ? `in the next ${memberships.data.expiringDays} days` : undefined}
+        />
       </div>
+      <div className="mt-6 grid gap-6 xl:grid-cols-3">
+        <ChartCard
+          className="xl:col-span-2"
+          title="Revenue"
+          subtitle={revenue ? `${formatINR(revenue.months.reduce((n, m) => n + m.amount, 0))} collected over 6 months` : "Membership payments collected per month"}
+          table={<DataTable head={["Month", "Payments", "Collected"]} rows={[...(revenue?.months ?? [])].reverse().map((m) => [m.month, m.count, formatINR(m.amount)])} />}
+        >
+          {memberships.isPending ? <Skeleton className="h-60 w-full" /> : <RevenueChart months={revenue!.months} />}
+        </ChartCard>
+        <Card className="flex flex-col">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-2xl font-semibold">Expiring soon</h2>
+            <Link href="/memberships?filter=expiring" className="text-sm text-muted-foreground transition hover:text-foreground">
+              See all
+            </Link>
+          </div>
+          {memberships.isPending ? (
+            <Skeleton className="mt-4 h-40 w-full" />
+          ) : memberships.data!.expiringSoon.length === 0 ? (
+            <p className="mt-4 flex-1 text-sm text-muted-foreground">Nobody&apos;s membership ends in the next week.</p>
+          ) : (
+            <ul className="mt-4 flex-1 space-y-1">
+              {memberships.data!.expiringSoon.slice(0, 5).map((m) => (
+                <li key={m.id} className="flex items-center gap-3 rounded-2xl px-2 py-2">
+                  <span className="grid size-9 place-items-center rounded-full bg-amber-400/15 text-sm font-semibold text-amber-300">
+                    {m.member.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{m.member.name}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {m.planName} · ends {formatDay(m.endDate)}
+                    </span>
+                  </span>
+                  <span className="text-sm font-semibold text-amber-300">{m.daysLeft === 0 ? "today" : `${m.daysLeft}d`}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/memberships?filter=expiring" className={buttonClass({ size: "sm", className: "mt-4 w-full" })}>
+            Renew memberships
+          </Link>
+        </Card>
+      </div>
+
       {gym?.joinCode ? <JoinCode code={gym.joinCode} /> : null}
 
       <ChartCard
