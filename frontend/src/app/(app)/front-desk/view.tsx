@@ -3,7 +3,8 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import QRCode from "qrcode";
-import { Check, Expand, Search, UserCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Expand, Pencil, Search, UserCheck, Wifi } from "lucide-react";
 import { PageHeader } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -24,16 +25,156 @@ function useCountdown(until: string | undefined) {
   return until ? Math.max(0, Math.round((new Date(until).getTime() - now) / 1000)) : 0;
 }
 
+const BASE_KEY = "ff-checkin-base";
+const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
+
+function readSavedBase() {
+  try {
+    return localStorage.getItem(BASE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The address phones open after scanning. "localhost" on the desk computer means the phone itself
+ * to a phone, so in development we swap in this computer's network address. A configured public
+ * URL, or one the desk saved by hand (e.g. a tunnel), wins.
+ */
+function useCheckInBase() {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || null;
+  const [saved, setSaved] = useState<string | null>(readSavedBase);
+  const isLocal = LOCAL_HOSTS.includes(window.location.hostname);
+  const lan = useQuery({
+    queryKey: ["local-address"],
+    queryFn: () => fetch("/local-address").then((r) => (r.ok ? (r.json() as Promise<{ addresses: string[] }>) : { addresses: [] })),
+    enabled: !configured && !saved && isLocal,
+    staleTime: Infinity,
+  });
+
+  const lanAddress = lan.data?.addresses[0];
+  const port = window.location.port ? `:${window.location.port}` : "";
+  const base =
+    configured ??
+    saved ??
+    (isLocal ? (lan.isPending ? null : lanAddress ? `http://${lanAddress}${port}` : window.location.origin) : window.location.origin);
+
+  function save(value: string | null) {
+    try {
+      if (value) localStorage.setItem(BASE_KEY, value);
+      else localStorage.removeItem(BASE_KEY);
+    } catch {
+      // Storage blocked: the choice lasts for this page view only.
+    }
+    setSaved(value);
+  }
+
+  return {
+    base,
+    save,
+    isCustom: !!saved,
+    // Phones can't reach a localhost address at all, so warn instead of showing a dead code.
+    unreachable: isLocal && !configured && !saved && !lan.isPending && !lanAddress,
+    sameWifiHint: isLocal && !configured && !saved && !!lanAddress,
+  };
+}
+
+function AddressLine({ base, isCustom, sameWifiHint, onSave }: { base: string; isCustom: boolean; sameWifiHint: boolean; onSave: (v: string | null) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(base);
+  const [error, setError] = useState<string>();
+
+  function submit() {
+    try {
+      const url = new URL(value.trim());
+      if (!/^https?:$/.test(url.protocol)) throw new Error();
+      onSave(url.origin);
+      setEditing(false);
+      setError(undefined);
+    } catch {
+      setError("Enter a full address, like http://192.168.1.20:3001");
+    }
+  }
+
+  if (editing) {
+    return (
+      <form
+        className="mt-4 w-full max-w-sm space-y-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          autoFocus
+          aria-label="Address phones should open"
+          className="h-10 w-full rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm focus-visible:border-primary focus-visible:outline-none"
+        />
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        <div className="flex justify-center gap-2">
+          {isCustom && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                onSave(null);
+                setEditing(false);
+              }}
+            >
+              Use automatic
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+          <Button size="sm" type="submit">
+            Save
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="mt-4 space-y-1 text-sm">
+      <p className="text-muted-foreground">
+        Phones open <span className="font-mono text-foreground">{base.replace(/^https?:\/\//, "")}</span>{" "}
+        <button
+          type="button"
+          onClick={() => {
+            setValue(base);
+            setEditing(true);
+          }}
+          className="inline-flex items-center gap-1 text-accent-text underline-offset-4 hover:underline"
+        >
+          <Pencil className="size-3" aria-hidden />
+          Change
+        </button>
+      </p>
+      {sameWifiHint && (
+        <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Wifi className="size-3.5" aria-hidden />
+          Phones must be on the same Wi-Fi as this computer.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function QrPanel() {
   const { data, isPending } = useQrToken();
   const { data: gym } = useGym();
   const [svg, setSvg] = useState("");
   const secondsLeft = useCountdown(data?.expiresAt);
+  const address = useCheckInBase();
+  const { base } = address;
 
   useEffect(() => {
-    if (!data) return;
+    if (!data || !base) return;
     let cancelled = false;
-    const url = `${window.location.origin}/check-in?t=${encodeURIComponent(data.token)}`;
+    const url = `${base}/check-in?t=${encodeURIComponent(data.token)}`;
     // Rendered by the library from our own URL, so the SVG markup is trusted.
     QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#0a0a0a", light: "#ffffff" } }).then(
       (markup) => !cancelled && setSvg(markup),
@@ -41,7 +182,7 @@ function QrPanel() {
     return () => {
       cancelled = true;
     };
-  }, [data]);
+  }, [data, base]);
 
   const ring = data ? secondsLeft / data.ttlSeconds : 0;
 
@@ -50,7 +191,11 @@ function QrPanel() {
       <p className="text-sm font-medium text-accent-text">Scan to check in</p>
       <h2 className="font-display mt-1 text-3xl font-semibold">{gym?.name ?? "Front desk"}</h2>
       <div className="relative mt-6 w-full max-w-[22rem]">
-        {isPending || !svg ? (
+        {address.unreachable ? (
+          <div className="grid aspect-square w-full place-items-center rounded-3xl border border-dashed border-white/15 p-6 text-sm text-muted-foreground">
+            This computer has no network address phones can reach. Connect it to Wi-Fi, or set an address with Change below.
+          </div>
+        ) : isPending || !svg ? (
           <Skeleton className="aspect-square w-full rounded-3xl" />
         ) : (
           <AnimatePresence mode="wait">
@@ -85,6 +230,7 @@ function QrPanel() {
         </svg>
         New code every minute · this one works for {secondsLeft}s
       </div>
+      {base && <AddressLine key={base} base={base} isCustom={address.isCustom} sameWifiHint={address.sameWifiHint} onSave={address.save} />}
       <p className="mt-4 max-w-xs text-sm text-muted-foreground">
         Members point their phone camera at the code. It opens FitForge and checks them in.
       </p>
