@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+/* One theme for every screen: black with red light, glassy surfaces, rounded shapes. */
+:root {
+  --background: #060606;
+  --foreground: #ffffff;
+  --card: rgb(255 255 255 / 0.04);
+  --muted: rgb(255 255 255 / 0.06);
+  --muted-foreground: #a3a3a3;
+  --border: rgb(255 255 255 / 0.1);
+  --primary: #ff2d1f;
+  --primary-foreground: #ffffff;
+  --accent-text: #ff5a4d;
+  --destructive: #ff8a80;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent-text: var(--accent-text);
+  --color-destructive: var(--destructive);
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+.font-display {
+  font-variation-settings: "SOFT" 100, "WONK" 0;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes glow-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-6%, 8%) scale(1.1);
+  }
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1.05) translate(0, 0);
+  }
+  to {
+    transform: scale(1.18) translate(-2%, -1.5%);
+  }
+}
+
+@layer utilities {
+  .animate-ken-burns {
+    animation: ken-burns 24s ease-in-out infinite alternate;
+  }
+
+  .animate-glow-drift {
+    animation: glow-drift 14s ease-in-out infinite;
+  }
+  .animate-glow-drift-slow {
+    animation: glow-drift 22s ease-in-out infinite reverse;
+  }
+
+
+  .animate-fade-up,
+  .animate-fade-up-delay-1,
+  .animate-fade-up-delay-2,
+  .animate-fade-up-delay-3,
+  .animate-fade-up-delay-4 {
+    opacity: 0;
+    animation: fade-up 0.8s ease-out forwards;
+  }
+  .animate-fade-up-delay-1 {
+    animation-delay: 0.2s;
+  }
+  .animate-fade-up-delay-2 {
+    animation-delay: 0.4s;
+  }
+  .animate-fade-up-delay-3 {
+    animation-delay: 0.6s;
+  }
+  .animate-fade-up-delay-4 {
+    animation-delay: 0.8s;
+  }
+
+  .animate-fade-in,
+  .animate-fade-in-delay {
+    opacity: 0;
+    animation: fade-in 0.8s ease-out forwards;
+  }
+  .animate-fade-in-delay {
+    animation-delay: 1s;
+  }
+
+  .animate-scale-in {
+    opacity: 0;
+    animation: scale-in 0.6s ease-out forwards;
+  }
+}
+
+/* Content must still appear when motion is reduced; it just appears without moving. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-up-delay-1,
+  .animate-fade-up-delay-2,
+  .animate-fade-up-delay-3,
+  .animate-fade-up-delay-4,
+  .animate-fade-in,
+  .animate-fade-in-delay,
+  .animate-scale-in,
+  .animate-glow-drift,
+  .animate-glow-drift-slow,
+  .animate-ken-burns {
+    opacity: 1;
+    animation: none;
+  }
+}
