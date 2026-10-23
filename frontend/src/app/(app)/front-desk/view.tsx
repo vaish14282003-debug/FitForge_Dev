@@ -4,7 +4,7 @@ import { useDeferredValue, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import QRCode from "qrcode";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Expand, Pencil, Search, UserCheck, Wifi } from "lucide-react";
+import { Check, CircleAlert, Expand, Pencil, Search, UserCheck, Wifi } from "lucide-react";
 import { PageHeader } from "@/components/stat-card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,16 @@ function useCheckInBase() {
     staleTime: Infinity,
   });
 
+  // A saved address (usually a tunnel) can stop working without warning; check it still answers.
+  // no-cors keeps this a plain reachability test: any response counts, a network error doesn't.
+  const savedCheck = useQuery({
+    queryKey: ["checkin-address", saved],
+    queryFn: () => fetch(`${saved}/login`, { mode: "no-cors", cache: "no-store" }).then(() => true, () => false),
+    enabled: !!saved,
+    refetchInterval: 60_000,
+    retry: false,
+  });
+
   const lanAddress = lan.data?.addresses[0];
   const port = window.location.port ? `:${window.location.port}` : "";
   const base =
@@ -74,13 +84,26 @@ function useCheckInBase() {
     base,
     save,
     isCustom: !!saved,
+    savedUnreachable: !!saved && savedCheck.data === false,
     // Phones can't reach a localhost address at all, so warn instead of showing a dead code.
     unreachable: isLocal && !configured && !saved && !lan.isPending && !lanAddress,
     sameWifiHint: isLocal && !configured && !saved && !!lanAddress,
   };
 }
 
-function AddressLine({ base, isCustom, sameWifiHint, onSave }: { base: string; isCustom: boolean; sameWifiHint: boolean; onSave: (v: string | null) => void }) {
+function AddressLine({
+  base,
+  isCustom,
+  sameWifiHint,
+  unreachable,
+  onSave,
+}: {
+  base: string;
+  isCustom: boolean;
+  sameWifiHint: boolean;
+  unreachable: boolean;
+  onSave: (v: string | null) => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(base);
   const [error, setError] = useState<string>();
@@ -154,6 +177,18 @@ function AddressLine({ base, isCustom, sameWifiHint, onSave }: { base: string; i
           Change
         </button>
       </p>
+      {unreachable && (
+        <div role="alert" className="mx-auto mt-2 max-w-sm rounded-2xl border border-amber-400/30 bg-amber-400/10 p-3 text-left text-xs">
+          <p className="flex items-center gap-1.5 font-semibold text-amber-300">
+            <CircleAlert className="size-3.5" aria-hidden />
+            Phones can&apos;t reach this address
+          </p>
+          <p className="mt-1 text-muted-foreground">If it was a tunnel, it has probably stopped. Switch back to this computer&apos;s Wi-Fi address, or start the tunnel again and update it.</p>
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => onSave(null)}>
+            Use automatic address
+          </Button>
+        </div>
+      )}
       {sameWifiHint && (
         <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <Wifi className="size-3.5" aria-hidden />
@@ -231,7 +266,7 @@ function QrPanel() {
         </svg>
         New code every minute · this one works for {secondsLeft}s
       </div>
-      {base && <AddressLine key={base} base={base} isCustom={address.isCustom} sameWifiHint={address.sameWifiHint} onSave={address.save} />}
+      {base && <AddressLine key={base} base={base} isCustom={address.isCustom} sameWifiHint={address.sameWifiHint} unreachable={address.savedUnreachable} onSave={address.save} />}
       <p className="mt-4 max-w-xs text-sm text-muted-foreground">
         Members point their phone camera at the code. It opens FitForge and checks them in.
       </p>
