@@ -36,6 +36,7 @@ export const config = {
     "/memberships/:path*",
     "/profile/:path*",
     "/schedule/:path*",
+    "/muscle-explorer/:path*",
     "/announcements/:path*",
     "/resources/:path*",
     "/nutrition/:path*",

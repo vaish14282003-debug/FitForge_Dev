@@ -39,6 +39,7 @@ const RULES: Rule[] = [
   { prefix: "/resources", allow: (s) => can(s, "workout:create") },
   { prefix: "/nutrition", allow: (s) => s.user.role === "MEMBER" },
   { prefix: "/reports", allow: (s) => can(s, "revenue:read") },
+  { prefix: "/muscle-explorer", allow: (s) => s.user.role === "MEMBER" || s.user.role === "TRAINER" },
 ];
 
 /** A same-site path from a `next` query param, or null. Rejects "//evil.com" and absolute URLs. */

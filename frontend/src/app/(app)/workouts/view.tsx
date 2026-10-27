@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Dumbbell, History, Play } from "lucide-react";
+import { Dumbbell, History, Play, Scan } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/stat-card";
 import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -30,10 +30,16 @@ export default function MyWorkouts() {
         }
         subtitle="The plan your trainer built for you, day by day. Tap an exercise to see how to do it."
         actions={
-          <Link href="/history" className={buttonClass({ variant: "outline" })}>
-            <History className="size-4" aria-hidden />
-            History
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/muscle-explorer" className={buttonClass({ variant: "outline" })}>
+              <Scan className="size-4" aria-hidden />
+              Muscle explorer
+            </Link>
+            <Link href="/history" className={buttonClass({ variant: "outline" })}>
+              <History className="size-4" aria-hidden />
+              History
+            </Link>
+          </div>
         }
       />
 

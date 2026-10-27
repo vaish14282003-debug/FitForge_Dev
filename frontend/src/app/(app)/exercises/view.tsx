@@ -1,17 +1,20 @@
 "use client";
 
 import { useDeferredValue, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Plus, SearchX } from "lucide-react";
+import { Plus, Scan, SearchX } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/stat-card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AddExerciseDialog } from "@/components/workouts/add-exercise-dialog";
 import { ExerciseMeta, MuscleChips, MuscleIconTile, SearchBox } from "@/components/workouts/exercise-bits";
+import { useSession } from "@/hooks/use-session";
 import { useExercises } from "@/hooks/use-workouts";
 import type { MuscleGroup } from "@/lib/types";
 
 export default function ExerciseLibrary() {
+  const { data: session } = useSession();
   const [q, setQ] = useState("");
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup | null>(null);
   const [adding, setAdding] = useState(false);
@@ -30,10 +33,18 @@ export default function ExerciseLibrary() {
         }
         subtitle="The building blocks for every plan. Add your gym's own moves alongside the built-in ones."
         actions={
-          <Button onClick={() => setAdding(true)}>
-            <Plus className="size-4" aria-hidden />
-            Add exercise
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {session?.user.role === "TRAINER" && (
+              <Link href="/muscle-explorer" className={buttonClass({ variant: "outline" })}>
+                <Scan className="size-4" aria-hidden />
+                Muscle explorer
+              </Link>
+            )}
+            <Button onClick={() => setAdding(true)}>
+              <Plus className="size-4" aria-hidden />
+              Add exercise
+            </Button>
+          </div>
         }
       />
 
