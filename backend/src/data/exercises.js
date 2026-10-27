@@ -1,4 +1,41 @@
 // The built-in library every gym starts with. Gyms can add their own on top.
+
+// Prime movers (primary) and assisting muscles (secondary) per exercise, as IDs from config/anatomy.js.
+// Taken from standard exercise-science descriptions of each movement; deliberately no activation
+// percentages, which vary by technique and person.
+const MUSCLES = {
+  "Barbell Bench Press": { movementPattern: 'HORIZONTAL_PUSH', primaryMuscles: ['pectoralis-major'], secondaryMuscles: ['anterior-deltoid', 'triceps-brachii'] },
+  "Incline Dumbbell Press": { movementPattern: 'HORIZONTAL_PUSH', primaryMuscles: ['pectoralis-major', 'anterior-deltoid'], secondaryMuscles: ['triceps-brachii'] },
+  "Push-up": { movementPattern: 'HORIZONTAL_PUSH', primaryMuscles: ['pectoralis-major'], secondaryMuscles: ['anterior-deltoid', 'triceps-brachii', 'rectus-abdominis'] },
+  "Cable Fly": { movementPattern: 'ISOLATION', primaryMuscles: ['pectoralis-major'], secondaryMuscles: ['anterior-deltoid'] },
+  "Pull-up": { movementPattern: 'VERTICAL_PULL', primaryMuscles: ['latissimus-dorsi'], secondaryMuscles: ['biceps-brachii', 'brachialis', 'rhomboids', 'trapezius'] },
+  "Lat Pulldown": { movementPattern: 'VERTICAL_PULL', primaryMuscles: ['latissimus-dorsi'], secondaryMuscles: ['biceps-brachii', 'brachialis', 'rhomboids'] },
+  "Barbell Row": { movementPattern: 'HORIZONTAL_PULL', primaryMuscles: ['latissimus-dorsi', 'rhomboids', 'trapezius'], secondaryMuscles: ['posterior-deltoid', 'biceps-brachii', 'erector-spinae'] },
+  "Seated Cable Row": { movementPattern: 'HORIZONTAL_PULL', primaryMuscles: ['latissimus-dorsi', 'rhomboids'], secondaryMuscles: ['trapezius', 'posterior-deltoid', 'biceps-brachii'] },
+  "Deadlift": { movementPattern: 'HINGE', primaryMuscles: ['gluteus-maximus', 'hamstrings', 'erector-spinae'], secondaryMuscles: ['quadriceps', 'trapezius', 'latissimus-dorsi', 'forearm-flexors'] },
+  "Overhead Press": { movementPattern: 'VERTICAL_PUSH', primaryMuscles: ['anterior-deltoid'], secondaryMuscles: ['lateral-deltoid', 'triceps-brachii', 'trapezius'] },
+  "Dumbbell Shoulder Press": { movementPattern: 'VERTICAL_PUSH', primaryMuscles: ['anterior-deltoid'], secondaryMuscles: ['lateral-deltoid', 'triceps-brachii', 'trapezius'] },
+  "Lateral Raise": { movementPattern: 'ISOLATION', primaryMuscles: ['lateral-deltoid'], secondaryMuscles: ['anterior-deltoid', 'trapezius'] },
+  "Face Pull": { movementPattern: 'HORIZONTAL_PULL', primaryMuscles: ['posterior-deltoid'], secondaryMuscles: ['rhomboids', 'trapezius'] },
+  "Barbell Curl": { movementPattern: 'ISOLATION', primaryMuscles: ['biceps-brachii'], secondaryMuscles: ['brachialis', 'brachioradialis'] },
+  "Hammer Curl": { movementPattern: 'ISOLATION', primaryMuscles: ['brachialis', 'brachioradialis'], secondaryMuscles: ['biceps-brachii'] },
+  "Triceps Pushdown": { movementPattern: 'ISOLATION', primaryMuscles: ['triceps-brachii'], secondaryMuscles: [] },
+  "Skull Crusher": { movementPattern: 'ISOLATION', primaryMuscles: ['triceps-brachii'], secondaryMuscles: [] },
+  "Dips": { movementPattern: 'VERTICAL_PUSH', primaryMuscles: ['triceps-brachii'], secondaryMuscles: ['pectoralis-major', 'anterior-deltoid'] },
+  "Back Squat": { movementPattern: 'SQUAT', primaryMuscles: ['quadriceps', 'gluteus-maximus'], secondaryMuscles: ['adductors', 'hamstrings', 'erector-spinae'] },
+  "Leg Press": { movementPattern: 'SQUAT', primaryMuscles: ['quadriceps'], secondaryMuscles: ['gluteus-maximus', 'adductors', 'hamstrings'] },
+  "Walking Lunge": { movementPattern: 'LUNGE', primaryMuscles: ['quadriceps', 'gluteus-maximus'], secondaryMuscles: ['hamstrings', 'adductors', 'gluteus-medius'] },
+  "Romanian Deadlift": { movementPattern: 'HINGE', primaryMuscles: ['hamstrings', 'gluteus-maximus'], secondaryMuscles: ['erector-spinae', 'adductors'] },
+  "Leg Curl": { movementPattern: 'ISOLATION', primaryMuscles: ['hamstrings'], secondaryMuscles: ['gastrocnemius'] },
+  "Hip Thrust": { movementPattern: 'HINGE', primaryMuscles: ['gluteus-maximus'], secondaryMuscles: ['hamstrings', 'gluteus-medius'] },
+  "Kettlebell Swing": { movementPattern: 'HINGE', primaryMuscles: ['gluteus-maximus', 'hamstrings'], secondaryMuscles: ['erector-spinae', 'anterior-deltoid'] },
+  "Plank": { movementPattern: 'CORE', primaryMuscles: ['rectus-abdominis'], secondaryMuscles: ['obliques'] },
+  "Hanging Leg Raise": { movementPattern: 'CORE', primaryMuscles: ['rectus-abdominis', 'hip-flexors'], secondaryMuscles: ['obliques', 'forearm-flexors'] },
+  "Cable Crunch": { movementPattern: 'CORE', primaryMuscles: ['rectus-abdominis'], secondaryMuscles: ['obliques'] },
+  "Burpee": { movementPattern: 'FULL_BODY', primaryMuscles: ['quadriceps', 'pectoralis-major'], secondaryMuscles: ['gluteus-maximus', 'triceps-brachii', 'anterior-deltoid', 'rectus-abdominis'] },
+  "Treadmill Run": { movementPattern: 'CARDIO', primaryMuscles: ['quadriceps', 'hamstrings', 'gastrocnemius'], secondaryMuscles: ['gluteus-maximus', 'soleus', 'hip-flexors'] },
+};
+
 module.exports = [
   ['Barbell Bench Press', 'CHEST', 'BARBELL', 'Lie on the bench, grip just wider than shoulders, lower the bar to mid-chest, press back up.'],
   ['Incline Dumbbell Press', 'CHEST', 'DUMBBELL', 'Bench at 30–45°. Press the dumbbells up over the upper chest, lower with control.'],
@@ -30,4 +67,4 @@ module.exports = [
   ['Cable Crunch', 'CORE', 'CABLE', 'Kneel facing the cable, rope by the head, crunch down by curling the spine.'],
   ['Burpee', 'FULL_BODY', 'BODYWEIGHT', 'Squat, kick back to a plank, push-up, jump the feet in and jump up.'],
   ['Treadmill Run', 'CARDIO', 'MACHINE', 'Steady pace you could hold a conversation at, or intervals as programmed.'],
-].map(([name, muscleGroup, equipment, instructions]) => ({ name, muscleGroup, equipment, instructions }));
+].map(([name, muscleGroup, equipment, instructions]) => ({ name, muscleGroup, equipment, instructions, ...MUSCLES[name] }));

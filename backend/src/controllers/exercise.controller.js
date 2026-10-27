@@ -8,9 +8,10 @@ const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const visibleTo = (user) => ({ $or: [{ gym: null }, { gym: user.gym }] });
 
 async function listExercises(req, res) {
-  const { muscleGroup, q } = req.valid.query;
+  const { muscleGroup, q, muscle } = req.valid.query;
   const filter = { $and: [visibleTo(req.user)] };
   if (muscleGroup) filter.$and.push({ muscleGroup });
+  if (muscle) filter.$and.push({ $or: [{ primaryMuscles: muscle }, { secondaryMuscles: muscle }] });
   if (q) filter.$and.push({ name: { $regex: escapeRegex(q), $options: 'i' } });
 
   const exercises = await Exercise.find(filter).sort({ name: 1 });

@@ -2,6 +2,7 @@
 // Keep in step with src/routes and src/validators when endpoints change.
 
 const { MUSCLE_GROUPS, EQUIPMENT } = require('../config/exercise');
+const { MUSCLE_IDS, MOVEMENT_PATTERNS } = require('../config/anatomy');
 
 const errorResponse = (description) => ({
   description,
@@ -122,6 +123,9 @@ module.exports = {
           instructions: { type: 'string' },
           imageUrl: { type: 'string', nullable: true },
           isCustom: { type: 'boolean', description: 'true for exercises a gym added itself' },
+          movementPattern: { type: 'string', nullable: true, enum: MOVEMENT_PATTERNS },
+          primaryMuscles: { type: 'array', items: { type: 'string', enum: MUSCLE_IDS }, description: 'Prime movers' },
+          secondaryMuscles: { type: 'array', items: { type: 'string', enum: MUSCLE_IDS }, description: 'Assisting muscles' },
         },
       },
       PlanExerciseInput: {
@@ -637,6 +641,7 @@ module.exports = {
         parameters: [
           { name: 'muscleGroup', in: 'query', schema: { type: 'string', enum: MUSCLE_GROUPS } },
           { name: 'q', in: 'query', description: 'Search by name', schema: { type: 'string' } },
+          { name: 'muscle', in: 'query', description: 'Only exercises that train this muscle (primary or secondary)', schema: { type: 'string', enum: MUSCLE_IDS } },
         ],
         responses: {
           200: { description: 'Exercises', content: json({ type: 'object', properties: { exercises: { type: 'array', items: ref('Exercise') } } }) },

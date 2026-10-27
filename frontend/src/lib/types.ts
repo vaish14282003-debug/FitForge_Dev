@@ -63,7 +63,24 @@ export type Exercise = {
   instructions: string;
   imageUrl: string | null;
   isCustom: boolean;
+  /** Detailed anatomy; empty for custom exercises that don't set it. IDs from the muscle catalog. */
+  movementPattern: MovementPattern | null;
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
 };
+
+export type MovementPattern =
+  | "HORIZONTAL_PUSH"
+  | "VERTICAL_PUSH"
+  | "HORIZONTAL_PULL"
+  | "VERTICAL_PULL"
+  | "SQUAT"
+  | "HINGE"
+  | "LUNGE"
+  | "ISOLATION"
+  | "CORE"
+  | "FULL_BODY"
+  | "CARDIO";
 
 export type PlanExercise = {
   exercise: Exercise;
