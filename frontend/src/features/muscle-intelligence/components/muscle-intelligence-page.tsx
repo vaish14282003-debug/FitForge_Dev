@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
+import { useProgress } from "@react-three/drei";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Box, Info, Maximize2, RotateCcw, Search, TriangleAlert, X } from "lucide-react";
@@ -14,7 +15,7 @@ import { useExercises } from "@/hooks/use-workouts";
 import type { Exercise } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { equipmentLabel } from "@/lib/workout";
-import { REGION_LABELS } from "../anatomy/muscles";
+import { REGION_LABELS, UNMODELED_MUSCLES } from "../anatomy/muscles";
 import { VIEW_PRESETS, type ViewPreset } from "../anatomy/procedural-body";
 import type { MuscleId } from "../types";
 import { MOVEMENT_LABELS, exercisesForMuscle, getMuscle, highlightMap, movementPatternsFor, relatedMuscles, searchMuscles, type Involvement } from "../utils/anatomy";
@@ -27,6 +28,22 @@ const AnatomyCanvas = dynamic(() => import("./anatomy-canvas"), {
   ssr: false,
   loading: () => <ViewportMessage busy>Loading 3D model…</ViewportMessage>,
 });
+
+/** Download progress for the anatomy model, shown over the viewport until it's ready. */
+function ModelLoading() {
+  const { active, progress } = useProgress();
+  if (!active) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 grid place-items-center" role="status" aria-label="Loading anatomy model">
+      <div className="w-48 text-center">
+        <div className="h-1 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: `${Math.round(progress)}%` }} />
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">Loading anatomy… {Math.round(progress)}%</p>
+      </div>
+    </div>
+  );
+}
 
 function ViewportMessage({ children, busy }: { children: React.ReactNode; busy?: boolean }) {
   return (
@@ -97,6 +114,7 @@ export default function MuscleIntelligence() {
   const [exerciseId, setExerciseId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewPreset>("default");
+  const [variant, setVariant] = useState<"model" | "simple">("model");
   // Read once in the browser; null while rendering on the server.
   const webgl = useSyncExternalStore(noopSubscribe, supportsWebGLOnce, () => null);
   const reducedMotion = useReducedMotion();
@@ -143,15 +161,30 @@ export default function MuscleIntelligence() {
         fallback={(retry) => (
           <ViewportMessage>
             <TriangleAlert className="size-6 text-amber-300" aria-hidden />
-            <span>The 3D view stopped working. The muscle list still works.</span>
-            <Button size="sm" variant="outline" onClick={retry}>
-              Try again
-            </Button>
+            <span>{variant === "model" ? "The anatomy model couldn't load." : "The 3D view stopped working."} The muscle list still works.</span>
+            <span className="flex flex-wrap justify-center gap-2">
+              <Button size="sm" variant="outline" onClick={retry}>
+                Try again
+              </Button>
+              {variant === "model" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setVariant("simple");
+                    retry();
+                  }}
+                >
+                  Use the simplified figure
+                </Button>
+              )}
+            </span>
           </ViewportMessage>
         )}
       >
         <AnatomyCanvas
           ref={canvas}
+          variant={variant}
           selected={selected}
           hovered={hovered}
           exerciseHighlight={exerciseHighlight}
@@ -174,7 +207,7 @@ export default function MuscleIntelligence() {
         subtitle="Rotate the body, tap a muscle, and see which exercises train it as a prime mover or an assistant."
       />
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
         <div className="space-y-4">
           <Card className="overflow-hidden p-0">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
@@ -211,12 +244,26 @@ export default function MuscleIntelligence() {
               initial={reducedMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6 }}
-              className="relative h-[460px] touch-none bg-[#0d0909] sm:h-[560px]"
+              className="relative h-[480px] touch-pan-y bg-[radial-gradient(ellipse_at_50%_35%,#1d1210_0%,#0d0909_70%)] sm:h-[620px]"
             >
               {viewport}
-              {hovered && (
-                <span className="pointer-events-none absolute top-3 left-3 rounded-full bg-black/70 px-3 py-1 text-sm backdrop-blur" aria-hidden>
-                  {getMuscle(hovered)?.name}
+              {webgl && variant === "model" && <ModelLoading />}
+              <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2" aria-hidden>
+                {hovered ? (
+                  <span className="rounded-full bg-black/70 px-3 py-1 text-sm backdrop-blur">{getMuscle(hovered)?.name}</span>
+                ) : (
+                  <span />
+                )}
+                {muscle && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-black/70 px-3 py-1 text-sm backdrop-blur">
+                    <span className="size-2 rounded-full bg-primary" />
+                    {muscle.name}
+                  </span>
+                )}
+              </div>
+              {variant === "simple" && (
+                <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs text-amber-300 backdrop-blur">
+                  Simplified figure
                 </span>
               )}
             </motion.div>
@@ -224,8 +271,8 @@ export default function MuscleIntelligence() {
               <Legend />
               <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                 <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-                Drag to rotate, scroll or pinch to zoom, tap empty space to clear. Stylized model for exploring muscle groups, not a
-                medical reference.
+                Drag to rotate, scroll or pinch to zoom, tap empty space to clear. Anatomy from BodyParts3D, © The Database Center for
+                Life Science, CC BY 4.0, simplified for the web. For learning about training, not medical use.
               </p>
             </div>
           </Card>
@@ -291,6 +338,11 @@ export default function MuscleIntelligence() {
                   </Button>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed">{muscle.description}</p>
+                {UNMODELED_MUSCLES.includes(muscle.id) && (
+                  <p className="mt-3 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
+                    The 3D model doesn&apos;t include this muscle, so it isn&apos;t highlighted on the body. Its exercises below are still accurate.
+                  </p>
+                )}
                 {related.length > 0 && (
                   <dl className="mt-4 space-y-3 text-sm">
                     <div>

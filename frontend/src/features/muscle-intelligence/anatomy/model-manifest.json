@@ -1,0 +1,156 @@
+{
+  "muscles": {
+    "pectoralis-major": [
+      "pectoralis-major__left__0",
+      "pectoralis-major__left__1",
+      "pectoralis-major__left__2",
+      "pectoralis-major__right__0",
+      "pectoralis-major__right__1",
+      "pectoralis-major__right__2"
+    ],
+    "anterior-deltoid": [
+      "anterior-deltoid__left__0",
+      "anterior-deltoid__right__0"
+    ],
+    "lateral-deltoid": [
+      "lateral-deltoid__left__0",
+      "lateral-deltoid__right__0"
+    ],
+    "posterior-deltoid": [
+      "posterior-deltoid__left__0",
+      "posterior-deltoid__right__0"
+    ],
+    "biceps-brachii": [
+      "biceps-brachii__left__0",
+      "biceps-brachii__left__1",
+      "biceps-brachii__right__0",
+      "biceps-brachii__right__1"
+    ],
+    "brachialis": [
+      "brachialis__left__0",
+      "brachialis__right__0"
+    ],
+    "brachioradialis": [
+      "brachioradialis__left__0",
+      "brachioradialis__right__0"
+    ],
+    "forearm-flexors": [
+      "forearm-flexors__left__0",
+      "forearm-flexors__left__1",
+      "forearm-flexors__left__2",
+      "forearm-flexors__left__3",
+      "forearm-flexors__left__4",
+      "forearm-flexors__right__0",
+      "forearm-flexors__right__1",
+      "forearm-flexors__right__2",
+      "forearm-flexors__right__3",
+      "forearm-flexors__right__4"
+    ],
+    "triceps-brachii": [
+      "triceps-brachii__left__0",
+      "triceps-brachii__left__1",
+      "triceps-brachii__left__2",
+      "triceps-brachii__right__0",
+      "triceps-brachii__right__1",
+      "triceps-brachii__right__2"
+    ],
+    "trapezius": [
+      "trapezius__left__0",
+      "trapezius__left__1",
+      "trapezius__left__2",
+      "trapezius__right__0",
+      "trapezius__right__1",
+      "trapezius__right__2"
+    ],
+    "rhomboids": [
+      "rhomboids__left__0",
+      "rhomboids__left__1",
+      "rhomboids__right__0",
+      "rhomboids__right__1"
+    ],
+    "erector-spinae": [
+      "erector-spinae__left__0",
+      "erector-spinae__left__1",
+      "erector-spinae__left__2",
+      "erector-spinae__left__3",
+      "erector-spinae__right__0",
+      "erector-spinae__right__1",
+      "erector-spinae__right__2",
+      "erector-spinae__right__3"
+    ],
+    "obliques": [
+      "obliques__left__0",
+      "obliques__right__0"
+    ],
+    "hip-flexors": [
+      "hip-flexors__left__0",
+      "hip-flexors__left__1",
+      "hip-flexors__right__0",
+      "hip-flexors__right__1"
+    ],
+    "gluteus-maximus": [
+      "gluteus-maximus__left__0",
+      "gluteus-maximus__right__0"
+    ],
+    "gluteus-medius": [
+      "gluteus-medius__left__0",
+      "gluteus-medius__right__0"
+    ],
+    "adductors": [
+      "adductors__left__0",
+      "adductors__left__1",
+      "adductors__left__2",
+      "adductors__left__3",
+      "adductors__left__4",
+      "adductors__right__0",
+      "adductors__right__1",
+      "adductors__right__2",
+      "adductors__right__3",
+      "adductors__right__4"
+    ],
+    "quadriceps": [
+      "quadriceps__left__0",
+      "quadriceps__left__1",
+      "quadriceps__left__2",
+      "quadriceps__left__3",
+      "quadriceps__right__0",
+      "quadriceps__right__1",
+      "quadriceps__right__2",
+      "quadriceps__right__3"
+    ],
+    "hamstrings": [
+      "hamstrings__left__0",
+      "hamstrings__left__1",
+      "hamstrings__left__2",
+      "hamstrings__left__3",
+      "hamstrings__right__0",
+      "hamstrings__right__1",
+      "hamstrings__right__2",
+      "hamstrings__right__3"
+    ],
+    "gastrocnemius": [
+      "gastrocnemius__left__0",
+      "gastrocnemius__left__1",
+      "gastrocnemius__right__0",
+      "gastrocnemius__right__1"
+    ],
+    "soleus": [
+      "soleus__left__0",
+      "soleus__right__0"
+    ],
+    "tibialis-anterior": [
+      "tibialis-anterior__left__0",
+      "tibialis-anterior__right__0"
+    ]
+  },
+  "missingMuscles": [
+    "latissimus-dorsi",
+    "rectus-abdominis"
+  ],
+  "missingConcepts": [],
+  "counts": {
+    "meshes": 174,
+    "triangles": 270132,
+    "bytes": 1985804
+  }
+}

@@ -18,9 +18,10 @@ export function muscleVisualState(
 
 /** Colours per state, shared by the 3D materials and the legend so they never disagree. */
 export const STATE_COLORS: Record<MuscleVisualState, { color: string; emissive: string; emissiveIntensity: number }> = {
-  default: { color: "#9c5a4f", emissive: "#000000", emissiveIntensity: 0 },
-  hovered: { color: "#e8a091", emissive: "#3a120c", emissiveIntensity: 0.35 },
-  selected: { color: "#ff2d1f", emissive: "#ff2d1f", emissiveIntensity: 0.35 },
-  primary: { color: "#ff2d1f", emissive: "#ff2d1f", emissiveIntensity: 0.25 },
-  secondary: { color: "#f5a524", emissive: "#8a4b00", emissiveIntensity: 0.2 },
+  // Natural, darker muscle tone so contours read and highlights stand out.
+  default: { color: "#6e342d", emissive: "#000000", emissiveIntensity: 0 },
+  hovered: { color: "#c76a5a", emissive: "#3a120c", emissiveIntensity: 0.3 },
+  selected: { color: "#ff2d1f", emissive: "#ff2d1f", emissiveIntensity: 0.45 },
+  primary: { color: "#e2382b", emissive: "#a3160d", emissiveIntensity: 0.25 },
+  secondary: { color: "#d99a3a", emissive: "#6b3b00", emissiveIntensity: 0.18 },
 };

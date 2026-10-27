@@ -1,6 +1,12 @@
 import type { Muscle } from "../types";
+import manifest from "./model-manifest.json";
 
-const m = (muscle: Omit<Muscle, "side" | "meshNames">): Muscle => ({ ...muscle, side: "bilateral", meshNames: [] });
+// Mesh names come from the generated model manifest (scripts/anatomy/build-model.mjs), never guessed.
+const meshes = manifest.muscles as Record<string, string[] | undefined>;
+const m = (muscle: Omit<Muscle, "side" | "meshNames">): Muscle => ({ ...muscle, side: "bilateral", meshNames: meshes[muscle.id] ?? [] });
+
+/** Muscles the 3D model doesn't include; they still work from the list and panels. */
+export const UNMODELED_MUSCLES: readonly string[] = manifest.missingMuscles;
 
 /**
  * The superficial muscles FitForge exercises are described in. Descriptions are plain functional

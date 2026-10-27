@@ -70,8 +70,8 @@ export type ViewPreset = "default" | "front" | "back" | "side";
 
 /** Camera position and look-at target for each preset; orbiting is free in between. */
 export const VIEW_PRESETS: Record<ViewPreset, { position: Vec3; target: Vec3; label: string }> = {
-  default: { position: [1.1, 1.25, 2.9], target: [0, 0.95, 0], label: "Default" },
-  front: { position: [0, 1.05, 3.1], target: [0, 0.95, 0], label: "Front" },
-  back: { position: [0, 1.05, -3.1], target: [0, 0.95, 0], label: "Back" },
-  side: { position: [3.1, 1.05, 0], target: [0, 0.95, 0], label: "Side" },
+  default: { position: [1.35, 1.1, 3.35], target: [0, 0.86, 0], label: "Default" },
+  front: { position: [0, 0.95, 3.7], target: [0, 0.86, 0], label: "Front" },
+  back: { position: [0, 0.95, -3.7], target: [0, 0.86, 0], label: "Back" },
+  side: { position: [3.7, 0.95, 0], target: [0, 0.86, 0], label: "Side" },
 };

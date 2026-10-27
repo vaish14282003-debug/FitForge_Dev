@@ -46,8 +46,8 @@ export type Muscle = {
   /** The library's coarse group, used to bridge to existing features (filters, icons). */
   group: MuscleGroup;
   /**
-   * Mesh names in the 3D model that belong to this muscle. Empty until a licensed model is chosen;
-   * filled from that model's real node names rather than guessed.
+   * Mesh names in the 3D model (left and right parts) that make up this muscle, from the generated
+   * model manifest. Empty when the model doesn't include the muscle.
    */
   meshNames: string[];
 };

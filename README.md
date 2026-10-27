@@ -71,10 +71,15 @@ an exercise to light up its muscles. Code lives in `frontend/src/features/muscle
 - **Data:** 24 stable muscle IDs (`backend/src/config/anatomy.js`) on every library exercise as
   `primaryMuscles` / `secondaryMuscles` / `movementPattern`. A Vitest test keeps the frontend catalog
   in sync with the backend. `GET /api/exercises?muscle=<id>` filters by muscle.
-- **Model:** an original stylized figure generated in code (`anatomy/procedural-body.ts`), one mesh per
-  muscle. It is not a medical reference and uses no third-party asset. To switch to a licensed GLB,
-  fill each muscle's `meshNames` from the model's node names; `buildMeshIndex` maps meshes to IDs.
-- **Performance:** three.js loads only on this page (one ~245 KB gzipped chunk), renders on demand
+- **Model:** `frontend/public/models/anatomy.glb`, derived from **BodyParts3D, © The Database Center for Life
+  Science, CC BY 4.0** (see `public/models/ATTRIBUTION.md`, including a note on the older CC BY-SA notice in
+  the source files). Real anatomy: 22 of the 24 muscles as their own meshes (left and right), plus context
+  muscles and the skeleton. BP3D 4.0 has no latissimus dorsi or rectus abdominis; the page says so and those
+  still work from the list. Muscle-to-mesh mapping is reviewed by hand in `scripts/anatomy/bp3d-mapping.json`;
+  rebuild with `npm run build:anatomy-model -- <bodyparts3d data dir>` (steps at the top of the script).
+  The earlier stylized figure (`anatomy/procedural-body.ts`) remains only as a fallback if the model fails to load.
+- **Performance:** three.js loads only on this page (~275 KB gzipped of code plus the 1.9 MB meshopt-compressed
+  model, ~270k triangles), renders on demand
   rather than every frame, and caps device pixel ratio at 1.75. Without WebGL the page keeps a text
   muscle list and links to the 2D explorer (`/muscle-explorer`).
 

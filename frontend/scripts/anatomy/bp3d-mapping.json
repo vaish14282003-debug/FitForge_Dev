@@ -1,0 +1,41 @@
+{
+  "$comment": "FitForge muscle ID -> BodyParts3D concept names ({side} = left/right). Reviewed by hand; edit here, then rerun build-model.mjs. Muscles absent from BodyParts3D 4.0 are listed under missing.",
+  "muscles": {
+    "pectoralis-major": ["clavicular part of {side} pectoralis major", "sternocostal part of {side} pectoralis major", "abdominal part of {side} pectoralis major"],
+    "anterior-deltoid": ["clavicular part of {side} deltoid"],
+    "lateral-deltoid": ["acromial part of {side} deltoid"],
+    "posterior-deltoid": ["spinal part of {side} deltoid"],
+    "biceps-brachii": ["long head of {side} biceps brachii", "short head of {side} biceps brachii"],
+    "brachialis": ["{side} brachialis"],
+    "brachioradialis": ["{side} brachioradialis"],
+    "forearm-flexors": ["{side} flexor carpi radialis", "humeral head of {side} flexor carpi ulnaris", "ulnar head of {side} flexor carpi ulnaris", "{side} palmaris longus", "{side} flexor digitorum superficialis"],
+    "triceps-brachii": ["long head of {side} triceps brachii", "lateral head of {side} triceps brachii", "medial head of {side} triceps brachii"],
+    "trapezius": ["descending part of {side} trapezius", "transverse part of {side} trapezius", "ascending part of {side} trapezius"],
+    "rhomboids": ["{side} rhomboid major", "{side} rhomboid minor"],
+    "erector-spinae": ["{side} iliocostalis lumborum", "{side} iliocostalis thoracis", "{side} longissimus thoracis", "{side} spinalis thoracis"],
+    "obliques": ["{side} external oblique"],
+    "hip-flexors": ["{side} psoas major", "{side} iliacus"],
+    "gluteus-maximus": ["{side} gluteus maximus"],
+    "gluteus-medius": ["{side} gluteus medius"],
+    "adductors": ["{side} adductor longus", "{side} adductor brevis", "{side} adductor magnus", "{side} gracilis", "{side} pectineus"],
+    "quadriceps": ["{side} rectus femoris", "{side} vastus lateralis", "{side} vastus medialis", "{side} vastus intermedius"],
+    "hamstrings": ["long head of {side} biceps femoris", "short head of {side} biceps femoris", "{side} semitendinosus", "{side} semimembranosus"],
+    "gastrocnemius": ["medial head of {side} gastrocnemius", "lateral head of {side} gastrocnemius"],
+    "soleus": ["{side} soleus"],
+    "tibialis-anterior": ["{side} tibialis anterior"]
+  },
+  "missing": ["latissimus-dorsi", "rectus-abdominis"],
+  "context": {
+    "$comment": "Other surface muscles drawn in the inactive material so the body has no holes. Not selectable.",
+    "names": [
+      "{side} sternocleidomastoid", "{side} levator scapulae", "{side} splenius capitis", "{side} splenius cervicis", "{side} serratus anterior",
+      "{side} serratus posterior inferior", "{side} serratus posterior superior", "{side} pectoralis minor", "{side} teres major", "{side} teres minor",
+      "{side} infraspinatus muscle", "{side} supraspinatus", "{side} subscapularis", "{side} coracobrachialis", "{side} anconeus",
+      "{side} extensor carpi radialis longus", "{side} extensor carpi radialis brevis", "{side} extensor carpi ulnaris", "{side} extensor digitorum",
+      "{side} supinator", "humeral head of {side} pronator teres", "ulnar head of {side} pronator teres", "{side} pronator quadratus",
+      "{side} gluteus minimus", "{side} tensor fasciae latae", "{side} sartorius", "{side} adductor minimus", "{side} piriformis", "{side} quadratus femoris",
+      "{side} fibularis longus", "{side} fibularis brevis", "{side} fibularis tertius", "{side} tibialis posterior", "{side} plantaris", "{side} popliteus",
+      "{side} platysma"
+    ]
+  }
+}

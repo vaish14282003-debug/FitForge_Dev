@@ -1,17 +1,21 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
-import { Canvas, type ThreeEvent } from "@react-three/fiber";
-import { CameraControls } from "@react-three/drei";
+import { Suspense, forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
+import { CameraControls, ContactShadows } from "@react-three/drei";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import * as THREE from "three";
 import { BASE_SHAPES, MUSCLE_SHAPES, VIEW_PRESETS, mirrorX, type ShapeDef, type ViewPreset } from "../anatomy/procedural-body";
 import type { MuscleId } from "../types";
 import type { Involvement } from "../utils/anatomy";
 import { STATE_COLORS, muscleVisualState, type MuscleVisualState } from "../utils/highlight";
+import { AnatomyModel } from "./anatomy-model";
 
 export type AnatomyCanvasHandle = { setView: (view: ViewPreset) => void };
 
 type Props = {
+  /** "model" is the BodyParts3D-derived anatomy; "simple" is the stylized fallback. */
+  variant: "model" | "simple";
   selected: MuscleId | null;
   hovered: MuscleId | null;
   exerciseHighlight: Map<MuscleId, Involvement>;
@@ -48,7 +52,8 @@ function build(shape: ShapeDef, mirrored: boolean, sphere: THREE.SphereGeometry)
   };
 }
 
-function Figure({ selected, hovered, exerciseHighlight, onHover, onSelect }: Omit<Props, "reducedMotion">) {
+/** Stylized fallback figure from primitive shapes, used only if the anatomy model can't load. */
+function SimpleFigure({ selected, hovered, exerciseHighlight, onHover, onSelect }: Omit<Props, "reducedMotion" | "variant">) {
   // One material per visual state and one shared sphere, reused by every mesh; disposed on unmount.
   const sphere = useMemo(() => new THREE.SphereGeometry(1, 32, 24), []);
   const materials = useMemo(() => {
@@ -130,7 +135,7 @@ function Figure({ selected, hovered, exerciseHighlight, onHover, onSelect }: Omi
 }
 
 /** The 3D viewport. Renders only when something changes (camera, hover, selection), not every frame. */
-const AnatomyCanvas = forwardRef<AnatomyCanvasHandle, Props>(function AnatomyCanvas({ reducedMotion, ...figure }, ref) {
+const AnatomyCanvas = forwardRef<AnatomyCanvasHandle, Props>(function AnatomyCanvas({ reducedMotion, variant, ...figure }, ref) {
   const controls = useRef<CameraControls>(null);
 
   useImperativeHandle(ref, () => ({
@@ -150,17 +155,24 @@ const AnatomyCanvas = forwardRef<AnatomyCanvasHandle, Props>(function AnatomyCan
       camera={{ position: [...start.position], fov: 32, near: 0.1, far: 30 }}
       onPointerMissed={() => figure.onSelect(null)}
       gl={{ antialias: true, powerPreference: "default" }}
+      scene={{ environmentIntensity: 0.35 }}
       aria-label="3D model of the human muscular system"
     >
       <color attach="background" args={["#0d0909"]} />
-      <hemisphereLight args={["#fff4ee", "#1a0d0b", 0.9]} />
-      <directionalLight position={[2.5, 3, 3]} intensity={1.6} />
-      <directionalLight position={[-3, 2, -2.5]} intensity={0.7} color="#ffd9cf" />
-      <Figure {...figure} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-        <circleGeometry args={[0.7, 48]} />
-        <meshStandardMaterial color="#1a1110" roughness={1} />
-      </mesh>
+      <StudioEnvironment />
+      {/* Key, fill and rim: soft studio light that keeps contours readable from every side. */}
+      <directionalLight position={[2.2, 3.2, 2.6]} intensity={2.1} color="#fff1ea" />
+      <directionalLight position={[-2.6, 1.6, 1.8]} intensity={0.7} color="#ffe3d8" />
+      <directionalLight position={[0, 2.4, -3]} intensity={1.1} color="#ffcfc2" />
+      <ambientLight intensity={0.12} />
+      {variant === "model" ? (
+        <Suspense fallback={null}>
+          <AnatomyModel {...figure} reducedMotion={reducedMotion} />
+        </Suspense>
+      ) : (
+        <SimpleFigure {...figure} />
+      )}
+      <ContactShadows position={[0, 0.001, 0]} scale={2.2} blur={2.4} far={1.2} opacity={0.55} resolution={512} frames={1} color="#000000" />
       <CameraControls
         ref={controls}
         makeDefault
@@ -174,6 +186,19 @@ const AnatomyCanvas = forwardRef<AnatomyCanvasHandle, Props>(function AnatomyCan
     </Canvas>
   );
 });
+
+/** Soft reflections from three's built-in RoomEnvironment: no HDR file to download. */
+function StudioEnvironment() {
+  const gl = useThree((state) => state.gl);
+  const texture = useMemo(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+    return env;
+  }, [gl]);
+  useEffect(() => () => texture.dispose(), [texture]);
+  return <primitive attach="environment" object={texture} />;
+}
 
 // CameraControls needs its look-at target set after it mounts.
 function InitialTarget({ controls }: { controls: React.RefObject<CameraControls | null> }) {

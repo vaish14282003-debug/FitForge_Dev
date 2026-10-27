@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
-import { MUSCLES } from "../anatomy/muscles";
+import { MUSCLES, UNMODELED_MUSCLES } from "../anatomy/muscles";
 import type { Muscle } from "../types";
 import { buildMeshIndex, exercisesForMuscle, highlightMap, involvement, movementPatternsFor, relatedMuscles, searchMuscles } from "./anatomy";
 
@@ -76,7 +76,16 @@ describe("lookups", () => {
     const index = buildMeshIndex(sample);
     expect(index.get("Pectoralis_R")).toBe("pectoralis-major");
     expect(() => buildMeshIndex([...sample, { ...MUSCLES[2], meshNames: ["Pectoralis_L"] }])).toThrow(/both/);
-    // Real catalog has no meshes yet: an empty index, not an error.
-    expect(buildMeshIndex().size).toBe(0);
+    // The real catalog: every modeled muscle has left and right meshes, and each mesh has one owner.
+    const real = buildMeshIndex();
+    expect(real.size).toBeGreaterThan(40);
+    for (const m of MUSCLES) {
+      if (UNMODELED_MUSCLES.includes(m.id)) expect(m.meshNames).toEqual([]);
+      else {
+        expect(m.meshNames.some((n) => n.includes("__left__"))).toBe(true);
+        expect(m.meshNames.some((n) => n.includes("__right__"))).toBe(true);
+        for (const n of m.meshNames) expect(real.get(n)).toBe(m.id);
+      }
+    }
   });
 });
