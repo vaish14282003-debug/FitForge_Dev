@@ -15,6 +15,8 @@ const devOrigins = [
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // Hides the floating "N" dev button, which covered the phone tab bar. Errors still show if they happen.
+  devIndicators: false,
   allowedDevOrigins: devOrigins,
   partialPrefetching: true,
   // 90 is used for the full-bleed landing hero, where compression artefacts show most.
