@@ -7,8 +7,7 @@ import { Logo } from "@/components/logo";
 import { ArrowUpRight, Award, Crown, X } from "lucide-react";
 
 // Optional looping clip you own the rights to, e.g. "/hero.mp4" in public/. Without one the hero
-// to serve our own copy. The gym photo shows underneath until the video starts, or if it fails.
-// shows the gym photo. (The earlier placeholder clip was third-party footage and was removed.)
+// shows the gym photo, which also sits underneath while a video loads or if it fails.
 const HERO_VIDEO = process.env.NEXT_PUBLIC_HERO_VIDEO_URL;
 
 const NAV_LINKS = [
