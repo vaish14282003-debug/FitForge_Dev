@@ -14,6 +14,8 @@ const devOrigins = [
 ];
 
 const nextConfig: NextConfig = {
+  // A self-contained server in .next/standalone, used by the Docker image.
+  output: "standalone",
   cacheComponents: true,
   // Hides the floating "N" dev button, which covered the phone tab bar. Errors still show if they happen.
   devIndicators: false,

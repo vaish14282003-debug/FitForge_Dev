@@ -11,7 +11,7 @@ const router = Router();
 // Slows down credential stuffing and sign-up abuse.
 const credentialLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 20,
+  limit: env.authRateLimit,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skip: () => env.isTest,

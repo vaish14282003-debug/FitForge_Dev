@@ -52,6 +52,15 @@ Fitness tracking and gym management for members, trainers and gym owners.
   workout feedback, sessions booked or cancelled, classes cancelled, memberships added or ending
   soon, announcements and trainer messages. Owners post announcements to everyone, members, trainers
   or staff; trainers message their clients.
+- **Team management**: owners (and staff, for members) edit people and deactivate or reactivate
+  accounts. Deactivating signs them out everywhere; a deactivated trainer's clients are unassigned.
+- **Password reset**: "Forgot password?" emails a single-use link valid for 30 minutes. Without
+  `SMTP_URL` (development) the email, link included, is printed in the API log.
+- **Trainer tools**: private notes on each client, and shared files (PDF or image, up to 10 MB)
+  that clients find on their Workouts page.
+- **Nutrition**: members set calorie, macro and water goals and log meals and water by day;
+  trainers see a 7-day summary on the client page.
+- **Reports**: owners download members, payments and attendance as CSV and see trainer performance.
 
 ### File storage
 
@@ -106,8 +115,21 @@ The browser only talks to the Next.js origin; `/api/*` is forwarded to the API (
 ## Tests
 
 ```bash
-cd backend && npm test
+cd backend && npm test        # API: 115 tests against an in-memory MongoDB
+cd frontend && npm test       # website unit tests (Vitest)
+cd frontend && npm run test:e2e   # browser tests (Playwright) against a running site
 ```
+
+End-to-end tests read `E2E_BASE_URL` (default `http://localhost:3001`) and only create data when
+`E2E_ALLOW_WRITES=1`, so by default they're safe against your development database. They log in
+many times, so the API's login limit (`AUTH_RATE_LIMIT`, 20 per 15 minutes) may need raising for a
+local run. CI (`.github/workflows/ci.yml`) runs everything on every push, including the browser
+tests against the production Docker images and a throwaway database.
+
+## Deploying
+
+See [DEPLOY.md](DEPLOY.md): Atlas + Render (API, `render.yaml`) + Vercel (website), with S3 for
+uploads and SMTP for email. `docker compose --profile full up --build` runs the whole stack locally.
 
 Runs against an in-memory MongoDB (downloaded once, on the first run). The test script sets
 `--experimental-vm-modules` because the MongoDB driver uses a dynamic `import()` that Jest

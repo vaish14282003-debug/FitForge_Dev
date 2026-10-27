@@ -1,4 +1,6 @@
-# Local development database. The API and web app run on the host with `npm run dev`.
+# Development: `docker compose up -d` starts MongoDB only; run the API and website with `npm run dev`.
+# Whole stack in containers: `docker compose --profile full up --build` (website on http://localhost:3000;
+# set WEB_PORT to use another port).
 services:
   mongo:
     image: mongo:8
@@ -8,5 +10,34 @@ services:
     volumes:
       - mongo-data:/data/db
 
+  api:
+    profiles: [full]
+    build: ./backend
+    restart: unless-stopped
+    depends_on: [mongo]
+    environment:
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/fitforge
+      # Change this for anything beyond trying it locally (48+ random characters).
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-local-compose-secret-change-me-local-compose-secret}
+      CLIENT_ORIGIN: http://localhost:3000
+      APP_URL: http://localhost:3000
+      SMTP_URL: ${SMTP_URL:-}
+      STORAGE_DRIVER: local
+    volumes:
+      - uploads:/app/uploads
+
+  web:
+    profiles: [full]
+    build:
+      context: ./frontend
+      args:
+        API_URL: http://api:4000
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+
 volumes:
   mongo-data:
+  uploads:

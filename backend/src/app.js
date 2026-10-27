@@ -10,8 +10,8 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
-// Behind the Next.js rewrite (and a platform proxy in production), so trust one hop for req.ip.
-app.set('trust proxy', 1);
+// How many proxies sit in front of us (see TRUST_PROXY), so req.ip is the visitor's real address.
+app.set('trust proxy', env.trustProxy);
 app.use(helmet());
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '100kb' }));

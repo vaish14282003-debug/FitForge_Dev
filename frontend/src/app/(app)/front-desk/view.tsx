@@ -227,11 +227,7 @@ function QrPanel() {
       <p className="text-sm font-medium text-accent-text">Scan to check in</p>
       <h2 className="font-display mt-1 text-3xl font-semibold">{gym?.name ?? "Front desk"}</h2>
       <div className="relative mt-6 w-full max-w-[22rem]">
-        {address.unreachable ? (
-          <div className="grid aspect-square w-full place-items-center rounded-3xl border border-dashed border-white/15 p-6 text-sm text-muted-foreground">
-            This computer has no network address phones can reach. Connect it to Wi-Fi, or set an address with Change below.
-          </div>
-        ) : isPending || !svg ? (
+        {isPending || !svg ? (
           <Skeleton className="aspect-square w-full rounded-3xl" />
         ) : (
           <AnimatePresence mode="wait">
@@ -266,6 +262,12 @@ function QrPanel() {
         </svg>
         New code every minute · this one works for {secondsLeft}s
       </div>
+      {address.unreachable && (
+        <p role="status" className="mt-4 max-w-sm rounded-2xl border border-amber-400/30 bg-amber-400/10 p-3 text-left text-xs text-muted-foreground">
+          This screen is open on <span className="font-mono">localhost</span>, which phones can&apos;t reach. Open FitForge here using its web
+          address or this computer&apos;s Wi-Fi address, or set one with Change below.
+        </p>
+      )}
       {base && <AddressLine key={base} base={base} isCustom={address.isCustom} sameWifiHint={address.sameWifiHint} unreachable={address.savedUnreachable} onSave={address.save} />}
       <p className="mt-4 max-w-xs text-sm text-muted-foreground">
         Members point their phone camera at the code. It opens FitForge and checks them in.

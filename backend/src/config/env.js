@@ -15,6 +15,11 @@ const schema = Joi.object({
   SMTP_URL: Joi.string().uri({ scheme: ['smtp', 'smtps'] }).allow(''),
   MAIL_FROM: Joi.string().default('FitForge <no-reply@fitforge.app>'),
   LOG_LEVEL: Joi.string().default('info'),
+  // Login/sign-up/reset attempts allowed per IP per 15 minutes. Raise only for automated test runs.
+  AUTH_RATE_LIMIT: Joi.number().integer().min(1).default(20),
+  // Proxies in front of the API that add X-Forwarded-For. 1 locally (the website); 2 for
+  // Vercel -> Render. Too low and every visitor shares one IP for rate limiting.
+  TRUST_PROXY: Joi.number().integer().min(0).max(5).default(1),
   // Where uploaded files live: this machine's disk, or an S3 bucket.
   STORAGE_DRIVER: Joi.string().valid('local', 's3').default('local'),
   UPLOAD_DIR: Joi.string().default('uploads'),
@@ -44,6 +49,8 @@ module.exports = {
   smtpUrl: value.SMTP_URL,
   mailFrom: value.MAIL_FROM,
   logLevel: value.LOG_LEVEL,
+  authRateLimit: value.AUTH_RATE_LIMIT,
+  trustProxy: value.TRUST_PROXY,
   storage: {
     driver: value.STORAGE_DRIVER,
     uploadDir: value.UPLOAD_DIR,
