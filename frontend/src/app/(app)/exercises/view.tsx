@@ -35,9 +35,9 @@ export default function ExerciseLibrary() {
         actions={
           <div className="flex flex-wrap gap-2">
             {session?.user.role === "TRAINER" && (
-              <Link href="/muscle-explorer" className={buttonClass({ variant: "outline" })}>
+              <Link href="/muscle-intelligence" className={buttonClass({ variant: "outline" })}>
                 <Scan className="size-4" aria-hidden />
-                Muscle explorer
+                Muscle Intelligence
               </Link>
             )}
             <Button onClick={() => setAdding(true)}>

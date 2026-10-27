@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { buttonClass } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, MousePointerClick, SearchX } from "lucide-react";
 import { BodyMap, GROUPS_BY_SIDE, type BodySide } from "@/components/explorer/body-map";
@@ -123,6 +125,11 @@ export default function MuscleExplorer() {
           </>
         }
         subtitle="Tap a muscle to see the exercises that train it. Switch between front and back."
+        actions={
+          <Link href="/muscle-intelligence" className={buttonClass({ variant: "outline" })}>
+            Try the 3D view
+          </Link>
+        }
       />
 
       <div className="grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)_minmax(0,1fr)]">

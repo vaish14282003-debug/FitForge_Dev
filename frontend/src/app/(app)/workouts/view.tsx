@@ -31,9 +31,9 @@ export default function MyWorkouts() {
         subtitle="The plan your trainer built for you, day by day. Tap an exercise to see how to do it."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Link href="/muscle-explorer" className={buttonClass({ variant: "outline" })}>
+            <Link href="/muscle-intelligence" className={buttonClass({ variant: "outline" })}>
               <Scan className="size-4" aria-hidden />
-              Muscle explorer
+              Muscle Intelligence
             </Link>
             <Link href="/history" className={buttonClass({ variant: "outline" })}>
               <History className="size-4" aria-hidden />

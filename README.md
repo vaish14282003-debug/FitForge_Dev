@@ -62,6 +62,22 @@ Fitness tracking and gym management for members, trainers and gym owners.
   trainers see a 7-day summary on the client page.
 - **Reports**: owners download members, payments and attendance as CSV and see trainer performance.
 
+### Muscle Intelligence (3D)
+
+`/muscle-intelligence` (members and trainers) shows a rotatable 3D muscular figure. Tap a muscle to see
+what it does and which exercises train it as a prime mover (primary) or an assistant (secondary); pick
+an exercise to light up its muscles. Code lives in `frontend/src/features/muscle-intelligence/`.
+
+- **Data:** 24 stable muscle IDs (`backend/src/config/anatomy.js`) on every library exercise as
+  `primaryMuscles` / `secondaryMuscles` / `movementPattern`. A Vitest test keeps the frontend catalog
+  in sync with the backend. `GET /api/exercises?muscle=<id>` filters by muscle.
+- **Model:** an original stylized figure generated in code (`anatomy/procedural-body.ts`), one mesh per
+  muscle. It is not a medical reference and uses no third-party asset. To switch to a licensed GLB,
+  fill each muscle's `meshNames` from the model's node names; `buildMeshIndex` maps meshes to IDs.
+- **Performance:** three.js loads only on this page (one ~245 KB gzipped chunk), renders on demand
+  rather than every frame, and caps device pixel ratio at 1.75. Without WebGL the page keeps a text
+  muscle list and links to the 2D explorer (`/muscle-explorer`).
+
 ### File storage
 
 Uploads go to `backend/uploads/` by default. To use S3 instead, set in `backend/.env`:
