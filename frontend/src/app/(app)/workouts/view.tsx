@@ -8,11 +8,14 @@ import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { startHref } from "@/components/workouts/todays-workout";
 import { PlanDayView } from "@/components/workouts/plan-day-view";
+import { ResourceList } from "@/components/extras/resource-list";
+import { useResources } from "@/hooks/use-extras";
 import { usePlans } from "@/hooks/use-workouts";
 import { cn } from "@/lib/utils";
 
 export default function MyWorkouts() {
   const { data: plans, isPending } = usePlans();
+  const resources = useResources();
   const [selected, setSelected] = useState(0);
   const plan = plans?.[Math.min(selected, (plans?.length ?? 1) - 1)];
 
@@ -74,6 +77,12 @@ export default function MyWorkouts() {
             )}
           />
         </>
+      )}
+      {(resources.data?.length ?? 0) > 0 && (
+        <section id="resources" className="mt-12 scroll-mt-28">
+          <h2 className="font-display mb-4 text-3xl font-semibold">From your trainer</h2>
+          <ResourceList resources={resources.data!} canDelete={() => false} />
+        </section>
       )}
     </>
   );

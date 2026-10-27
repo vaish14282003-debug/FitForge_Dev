@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarCheck, CalendarClock, Check, ClipboardList, Copy, IdCard, IndianRupee, Megaphone, RefreshCw, ScanLine, UserCog, Users } from "lucide-react";
+import { CalendarCheck, CalendarClock, Check, ClipboardList, Copy, FileSpreadsheet, IdCard, IndianRupee, Megaphone, RefreshCw, ScanLine, UserCog, Users } from "lucide-react";
 import { PostAnnouncementDialog } from "@/components/notifications/announcement-bits";
 import { ChartCard, DataTable, shortDate } from "@/components/progress/chart-card";
 import { CheckInChart, RevenueChart } from "@/components/progress/charts";
@@ -108,6 +108,10 @@ export default function OwnerDashboard() {
         subtitle="Members, trainers and the numbers that keep your gym running."
         actions={
           <div className="flex flex-wrap gap-2">
+            <Link href="/reports" className={buttonClass({ variant: "outline" })}>
+              <FileSpreadsheet className="size-4" aria-hidden />
+              Reports
+            </Link>
             <Link href="/plans" className={buttonClass({ variant: "outline" })}>
               <ClipboardList className="size-4" aria-hidden />
               Training plans

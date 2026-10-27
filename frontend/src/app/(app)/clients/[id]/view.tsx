@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, MessageSquareQuote, UserX } from "lucide-react";
+import { ClientNotes } from "@/components/extras/client-notes";
+import { ClientNutrition } from "@/components/extras/client-nutrition";
 import { ProgressView } from "@/components/progress/progress-view";
 import { EmptyState, PageHeader } from "@/components/stat-card";
 import { Card } from "@/components/ui/card";
@@ -48,6 +50,11 @@ export default function ClientDetail() {
           ) : (
             <Skeleton className="mb-10 h-24 w-80" />
           )}
+
+          <div className="mb-6 grid items-start gap-6 xl:grid-cols-2">
+            <ClientNotes memberId={id} />
+            <ClientNutrition memberId={id} />
+          </div>
 
           <ProgressView memberId={id} />
 

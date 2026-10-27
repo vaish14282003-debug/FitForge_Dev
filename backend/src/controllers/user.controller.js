@@ -109,4 +109,26 @@ async function assignTrainer(req, res) {
   res.json({ user: member });
 }
 
-module.exports = { updateMe, uploadAvatar, removeAvatar, changePassword, listUsers, createUser, listClients, assignTrainer };
+// Edit or (de)activate someone the caller is allowed to manage. Deactivating signs them out
+// everywhere; a deactivated trainer's clients are unassigned rather than left with nobody.
+async function updateUser(req, res) {
+  const user = await User.findOne({ _id: req.valid.params.id, gym: req.user.gym });
+  if (!user || !manageableRoles(req.user.role).includes(user.role)) throw ApiError.notFound('Person not found');
+  if (user._id.equals(req.user._id)) throw ApiError.badRequest('Edit your own details from your profile');
+
+  const { name, phone, isActive } = req.valid.body;
+  if (name !== undefined) user.name = name;
+  if (phone !== undefined) user.phone = phone;
+  const deactivating = isActive === false && user.isActive;
+  if (isActive !== undefined) user.isActive = isActive;
+  await user.save();
+
+  if (deactivating) {
+    await RefreshToken.updateMany({ user: user._id, revokedAt: null }, { revokedAt: new Date() });
+    if (user.role === ROLES.TRAINER) await User.updateMany({ gym: req.user.gym, trainer: user._id }, { trainer: null });
+  }
+  await user.populate('trainer', 'name email avatarKey');
+  res.json({ user });
+}
+
+module.exports = { updateMe, uploadAvatar, removeAvatar, changePassword, listUsers, createUser, listClients, assignTrainer, updateUser };

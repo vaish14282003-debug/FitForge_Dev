@@ -315,3 +315,43 @@ export type Announcement = {
   author: UserRef;
   createdAt: string;
 };
+
+export type ClientNote = { id: string; body: string; author: UserRef; createdAt: string };
+
+export type Resource = {
+  id: string;
+  owner: UserRef;
+  title: string;
+  description: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  shareWithAllClients: boolean;
+  sharedWith: string[];
+  downloadUrl: string;
+  createdAt: string;
+};
+
+export type Meal = "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK";
+export type Macros = { calories: number; protein: number; carbs: number; fat: number };
+export type NutritionGoals = { calories: number | null; protein: number | null; carbs: number | null; fat: number | null; waterMl: number | null };
+export type FoodEntry = Macros & { id: string; meal: Meal; name: string };
+export type NutritionDay = {
+  member: { id: string; name: string };
+  day: string;
+  goals: NutritionGoals;
+  log: { day: string; entries: FoodEntry[]; waterMl: number };
+  totals: Macros;
+  week: (Macros & { day: string; waterMl: number; logged: boolean })[];
+};
+
+export type TrainerPerformance = {
+  trainer: UserRef & { isActive: boolean };
+  clients: number;
+  activePlans: number;
+  sessions: { completed: number; noShow: number; cancelled: number; upcoming: number };
+  classes: { taught: number; fillRate: number | null };
+  reviewsGiven: number;
+  clientWorkouts: number;
+  clientVisitsPerWeek: number | null;
+};

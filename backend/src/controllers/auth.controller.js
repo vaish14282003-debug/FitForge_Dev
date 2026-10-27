@@ -1,7 +1,11 @@
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const Gym = require('../models/Gym');
 const RefreshToken = require('../models/RefreshToken');
+const PasswordReset = require('../models/PasswordReset');
+const env = require('../config/env');
+const { sendMail } = require('../services/mailer');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger');
 const { ROLES, permissionsFor } = require('../config/roles');
@@ -101,4 +105,47 @@ async function me(req, res) {
   res.json(await sessionPayload(req.user));
 }
 
-module.exports = { register, login, refresh, logout, me, BCRYPT_ROUNDS };
+const RESET_MINUTES = 30;
+
+// Always answers the same way, so it can't be used to find out which emails have accounts.
+async function forgotPassword(req, res) {
+  const user = await User.findOne({ email: req.valid.body.email, isActive: true });
+  if (user) {
+    const token = crypto.randomBytes(32).toString('base64url');
+    await PasswordReset.create({ user: user._id, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + RESET_MINUTES * 60 * 1000) });
+    const link = `${env.appUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
+    try {
+      await sendMail({
+        to: user.email,
+        subject: 'Reset your FitForge password',
+        text: `Hi ${user.name.split(' ')[0]},\n\nSomeone asked to reset your FitForge password. If it was you, open this link within ${RESET_MINUTES} minutes:\n\n${link}\n\nIf it wasn't you, you can ignore this email; your password stays the same.`,
+      });
+    } catch (err) {
+      logger.error(err);
+    }
+  }
+  res.json({ message: 'If an account uses that email, a reset link is on its way.' });
+}
+
+async function resetPassword(req, res) {
+  const { token, password } = req.valid.body;
+  // Claim the token atomically so it can only ever be used once.
+  const reset = await PasswordReset.findOneAndUpdate(
+    { tokenHash: hashToken(token), usedAt: null, expiresAt: { $gt: new Date() } },
+    { usedAt: new Date() }
+  );
+  if (!reset) throw ApiError.badRequest('This reset link is invalid or has expired. Ask for a new one.');
+  const user = await User.findById(reset.user);
+  if (!user || !user.isActive) throw ApiError.badRequest('This reset link is invalid or has expired. Ask for a new one.');
+
+  user.passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  await user.save();
+  // Every existing session and any other outstanding reset link stops working.
+  await Promise.all([
+    RefreshToken.updateMany({ user: user._id, revokedAt: null }, { revokedAt: new Date() }),
+    PasswordReset.updateMany({ user: user._id, usedAt: null }, { usedAt: new Date() }),
+  ]);
+  res.json({ message: 'Password updated. You can log in with it now.' });
+}
+
+module.exports = { register, login, refresh, logout, me, forgotPassword, resetPassword, BCRYPT_ROUNDS };

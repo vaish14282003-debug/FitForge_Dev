@@ -75,3 +75,17 @@ export function useRotateJoinCode() {
     onSuccess: (gym) => queryClient.setQueryData(["gym"], gym),
   });
 }
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; name?: string; phone?: string; isActive?: boolean }) =>
+      api<{ user: User }>(`/users/${id}`, { method: "PATCH", body }).then((r) => r.user),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["gym", "overview"] });
+      queryClient.invalidateQueries({ queryKey: ["memberships"] });
+    },
+  });
+}

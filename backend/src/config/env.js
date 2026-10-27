@@ -9,6 +9,11 @@ const schema = Joi.object({
   ACCESS_TOKEN_TTL_MINUTES: Joi.number().integer().min(1).default(15),
   REFRESH_TOKEN_TTL_DAYS: Joi.number().integer().min(1).default(7),
   CLIENT_ORIGIN: Joi.string().uri().default('http://localhost:3000'),
+  // Public address of the website, used in links inside emails (password reset).
+  APP_URL: Joi.string().uri().when('NODE_ENV', { is: 'production', then: Joi.required() }),
+  // e.g. smtps://user:pass@smtp.example.com:465. Without it, emails are written to the log (dev only).
+  SMTP_URL: Joi.string().uri({ scheme: ['smtp', 'smtps'] }).allow(''),
+  MAIL_FROM: Joi.string().default('FitForge <no-reply@fitforge.app>'),
   LOG_LEVEL: Joi.string().default('info'),
   // Where uploaded files live: this machine's disk, or an S3 bucket.
   STORAGE_DRIVER: Joi.string().valid('local', 's3').default('local'),
@@ -35,6 +40,9 @@ module.exports = {
   accessTokenTtlMinutes: value.ACCESS_TOKEN_TTL_MINUTES,
   refreshTokenTtlDays: value.REFRESH_TOKEN_TTL_DAYS,
   clientOrigin: value.CLIENT_ORIGIN,
+  appUrl: value.APP_URL || value.CLIENT_ORIGIN,
+  smtpUrl: value.SMTP_URL,
+  mailFrom: value.MAIL_FROM,
   logLevel: value.LOG_LEVEL,
   storage: {
     driver: value.STORAGE_DRIVER,

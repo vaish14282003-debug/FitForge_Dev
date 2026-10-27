@@ -30,4 +30,7 @@ const login = Joi.object({
   password: Joi.string().max(72).required(),
 });
 
-module.exports = { name, email, password, register, login };
+const forgotPassword = Joi.object({ email: email.required() });
+const resetPassword = Joi.object({ token: Joi.string().max(200).required(), password: password.required() });
+
+module.exports = { name, email, password, register, login, forgotPassword, resetPassword };

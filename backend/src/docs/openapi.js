@@ -43,6 +43,10 @@ module.exports = {
     { name: 'Memberships', description: 'Plans and prices, selling and renewing memberships, payments and revenue' },
     { name: 'Schedule', description: 'Trainer hours, 1-on-1 session booking, and group classes' },
     { name: 'Notifications', description: 'In-app alerts, announcements and trainer messages' },
+    { name: 'Clients', description: "Trainers' private notes about clients" },
+    { name: 'Resources', description: 'Files trainers share with clients (PDFs, images)' },
+    { name: 'Nutrition', description: 'Nutrition goals and a daily food and water log' },
+    { name: 'Reports', description: 'Owner CSV exports and trainer performance' },
     { name: 'Files', description: 'Uploaded images, served only within the owning gym' },
     { name: 'Attendance', description: 'Front-desk QR check-in, manual check-in, visit history and daily counts' },
   ],
@@ -1469,6 +1473,161 @@ module.exports = {
     },
     '/announcements/{id}': {
       delete: { tags: ['Notifications'], summary: 'Delete an announcement (owners)', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 204: { description: 'Deleted' }, 401: unauthorized, 403: forbidden, 404: errorResponse('Not found') } },
+    },
+
+    '/auth/forgot-password': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Email a password reset link',
+        description: 'Always returns the same message, whether or not the email has an account. The link works once, for 30 minutes.',
+        security: [],
+        requestBody: { required: true, content: json({ type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email' } } }) },
+        responses: { 200: { description: 'Request accepted' }, 400: badRequest, 429: errorResponse('Too many attempts') },
+      },
+    },
+    '/auth/reset-password': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Set a new password with a reset token',
+        description: 'Signs out every existing session.',
+        security: [],
+        requestBody: { required: true, content: json({ type: 'object', required: ['token', 'password'], properties: { token: { type: 'string' }, password: { type: 'string', minLength: 8, maxLength: 72 } } }) },
+        responses: { 200: { description: 'Password updated' }, 400: errorResponse('Invalid or expired link'), 429: errorResponse('Too many attempts') },
+      },
+    },
+    '/users/{id}': {
+      patch: {
+        tags: ['Users'],
+        summary: 'Edit or (de)activate someone you manage',
+        description: 'Owners: members, trainers, staff. Staff: members. Deactivating signs them out everywhere; a deactivated trainer\'s clients are unassigned.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: json({ type: 'object', properties: { name: { type: 'string' }, phone: { type: 'string' }, isActive: { type: 'boolean' } } }) },
+        responses: { 200: { description: 'Updated', content: json({ type: 'object', properties: { user: ref('User') } }) }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Person not found') },
+      },
+    },
+    '/clients/{id}/notes': {
+      get: {
+        tags: ['Clients'],
+        summary: "Private notes about a client (never shown to the member)",
+        description: 'Trainers: their own clients. Owners: any member.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Notes, newest first' }, 401: unauthorized, 403: forbidden, 404: errorResponse('Member not found') },
+      },
+      post: {
+        tags: ['Clients'],
+        summary: 'Add a note',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: json({ type: 'object', required: ['body'], properties: { body: { type: 'string', example: 'Left knee sore on deep squats; keep to box squats this week.' } } }) },
+        responses: { 201: { description: 'Created' }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Member not found') },
+      },
+    },
+    '/clients/{id}/notes/{noteId}': {
+      delete: {
+        tags: ['Clients'],
+        summary: 'Delete a note (its author, or an owner)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'noteId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 204: { description: 'Deleted' }, 401: unauthorized, 403: forbidden, 404: errorResponse('Note not found') },
+      },
+    },
+    '/resources': {
+      get: {
+        tags: ['Resources'],
+        summary: 'Files you can see',
+        description: "Members: from their trainer (shared with all clients or with them). Trainers: their own. Owners: the gym's.",
+        responses: { 200: { description: 'Resources' }, 401: unauthorized, 403: forbidden },
+      },
+      post: {
+        tags: ['Resources'],
+        summary: 'Upload a file and share it',
+        description: 'PDF, JPG, PNG or WebP up to 10 MB, checked to be what it claims. Without memberIds, trainers share with all their clients; owners must pick members.',
+        requestBody: {
+          required: true,
+          content: { 'multipart/form-data': { schema: { type: 'object', required: ['file', 'title'], properties: { file: { type: 'string', format: 'binary' }, title: { type: 'string' }, description: { type: 'string' }, memberIds: { type: 'string', description: 'Comma-separated member ids (optional)' } } } } },
+        },
+        responses: { 201: { description: 'Uploaded' }, 400: errorResponse('Wrong type, fake file, over 10 MB, or not your client'), 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/resources/{id}/file': {
+      get: {
+        tags: ['Resources'],
+        summary: 'Open or download a shared file',
+        description: 'Only for people it is shared with. Add ?download=1 to save instead of open.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'The file' }, 302: { description: 'Redirect to a signed S3 link' }, 401: unauthorized, 403: forbidden, 404: errorResponse('File not found') },
+      },
+    },
+    '/resources/{id}': {
+      delete: {
+        tags: ['Resources'],
+        summary: 'Delete a file (its uploader, or an owner)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 204: { description: 'Deleted' }, 401: unauthorized, 403: forbidden, 404: errorResponse('File not found') },
+      },
+    },
+    '/nutrition': {
+      get: {
+        tags: ['Nutrition'],
+        summary: "A day's food and water, the goals, and the last 7 days' totals",
+        parameters: [{ name: 'day', in: 'query', schema: { type: 'string', example: '2026-10-27' } }, { name: 'member', in: 'query', schema: { type: 'string' }, description: 'Trainers/owners: which client' }, { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 } }],
+        responses: { 200: { description: 'Nutrition day' }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Member not found') },
+      },
+    },
+    '/nutrition/goals': {
+      put: {
+        tags: ['Nutrition'],
+        summary: 'Set your daily targets (members)',
+        requestBody: { required: true, content: json({ type: 'object', properties: { calories: { type: 'integer', example: 2000 }, protein: { type: 'integer', example: 110 }, carbs: { type: 'integer' }, fat: { type: 'integer' }, waterMl: { type: 'integer', example: 3000 } } }) },
+        responses: { 200: { description: 'Saved' }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/nutrition/entries': {
+      post: {
+        tags: ['Nutrition'],
+        summary: 'Log a food',
+        requestBody: {
+          required: true,
+          content: json({
+            type: 'object',
+            required: ['day', 'meal', 'name', 'calories'],
+            properties: { day: { type: 'string', example: '2026-10-27' }, meal: { type: 'string', enum: ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] }, name: { type: 'string', example: 'Paneer bhurji, 2 rotis' }, calories: { type: 'number', example: 520 }, protein: { type: 'number', example: 28 }, carbs: { type: 'number' }, fat: { type: 'number' } },
+          }),
+        },
+        responses: { 201: { description: 'Logged' }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/nutrition/entries/{id}': {
+      delete: {
+        tags: ['Nutrition'],
+        summary: 'Remove a logged food',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'Removed' }, 401: unauthorized, 403: forbidden, 404: errorResponse('Entry not found') },
+      },
+    },
+    '/nutrition/water': {
+      put: {
+        tags: ['Nutrition'],
+        summary: "Set a day's water intake",
+        requestBody: { required: true, content: json({ type: 'object', required: ['day', 'waterMl'], properties: { day: { type: 'string' }, waterMl: { type: 'integer', example: 1750 } } }) },
+        responses: { 200: { description: 'Saved' }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/reports/members.csv': {
+      get: { tags: ['Reports'], summary: 'All members with their trainer and membership (CSV)', description: 'Needs `revenue:read` (owners).', parameters: [{ name: 'from', in: 'query', schema: { type: 'string', example: '2026-10-01' } }, { name: 'to', in: 'query', schema: { type: 'string', example: '2026-10-27' } }, { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 } }], responses: { 200: { description: 'CSV file', content: { 'text/csv': { schema: { type: 'string' } } } }, 401: unauthorized, 403: forbidden } },
+    },
+    '/reports/payments.csv': {
+      get: { tags: ['Reports'], summary: 'Memberships and payments overlapping a date range (CSV)', description: 'Defaults to the last 30 days.', parameters: [{ name: 'from', in: 'query', schema: { type: 'string', example: '2026-10-01' } }, { name: 'to', in: 'query', schema: { type: 'string', example: '2026-10-27' } }, { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 } }], responses: { 200: { description: 'CSV file', content: { 'text/csv': { schema: { type: 'string' } } } }, 401: unauthorized, 403: forbidden } },
+    },
+    '/reports/attendance.csv': {
+      get: { tags: ['Reports'], summary: 'Check-ins in a date range (CSV)', parameters: [{ name: 'from', in: 'query', schema: { type: 'string', example: '2026-10-01' } }, { name: 'to', in: 'query', schema: { type: 'string', example: '2026-10-27' } }, { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 } }], responses: { 200: { description: 'CSV file', content: { 'text/csv': { schema: { type: 'string' } } } }, 401: unauthorized, 403: forbidden } },
+    },
+    '/reports/trainers': {
+      get: {
+        tags: ['Reports'],
+        summary: 'Trainer performance over a date range',
+        description: 'Per trainer: clients, active plans, sessions (completed, no-show, cancelled, upcoming), classes taught and fill rate, reviews given, client workouts, and client gym visits per week.',
+        parameters: [{ name: 'from', in: 'query', schema: { type: 'string', example: '2026-10-01' } }, { name: 'to', in: 'query', schema: { type: 'string', example: '2026-10-27' } }, { name: 'tz', in: 'query', schema: { type: 'integer', example: -330 } }],
+        responses: { 200: { description: 'Trainer rows' }, 401: unauthorized, 403: forbidden },
+      },
     },
   },
 };

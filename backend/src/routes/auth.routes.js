@@ -20,6 +20,8 @@ const credentialLimiter = rateLimit({
 
 router.post('/register', credentialLimiter, validate({ body: schemas.register }), controller.register);
 router.post('/login', credentialLimiter, validate({ body: schemas.login }), controller.login);
+router.post('/forgot-password', credentialLimiter, validate({ body: schemas.forgotPassword }), controller.forgotPassword);
+router.post('/reset-password', credentialLimiter, validate({ body: schemas.resetPassword }), controller.resetPassword);
 router.post('/refresh', controller.refresh);
 router.post('/logout', controller.logout);
 router.get('/me', authenticate, controller.me);

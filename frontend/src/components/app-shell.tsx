@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CalendarDays, ChartLine, ClipboardList, CreditCard, Dumbbell, History, LayoutDashboard, Library, LogOut, ScanLine, Users, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChartLine, ClipboardList, CreditCard, Dumbbell, FolderOpen, History, LayoutDashboard, Library, LogOut, Salad, ScanLine, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Avatar } from "@/components/ui/avatar";
@@ -24,11 +24,15 @@ const NAV: NavItem[] = [
   { href: "/workouts", label: "Workouts", icon: Dumbbell },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/progress", label: "Progress", icon: ChartLine },
-  { href: "/history", label: "History", icon: History },
+  { href: "/nutrition", label: "Nutrition", icon: Salad },
+  // Members reach history from Workouts, keeping their nav to five items.
+  { href: "/history", label: "History", icon: History, hide: (s) => s.user.role === "MEMBER" },
   // Owners reach training plans from their dashboard, keeping their nav to five items.
   { href: "/plans", label: "Plans", icon: ClipboardList, hide: (s) => can(s, "gym:settings") },
   // Owners reach the library from the Plans page, keeping their nav to five items.
   { href: "/exercises", label: "Exercises", icon: Library, hide: (s) => can(s, "gym:settings") },
+  // Owners see every file from Reports; trainers manage theirs here.
+  { href: "/resources", label: "Resources", icon: FolderOpen, hide: (s) => can(s, "gym:settings") },
   { href: "/team", label: "Team", icon: Users },
   { href: "/memberships", label: "Memberships", icon: CreditCard },
   { href: "/front-desk", label: "Front desk", icon: ScanLine },

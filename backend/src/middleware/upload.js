@@ -25,4 +25,28 @@ const singleImage = (field) => (req, res, next) =>
     next(ApiError.badRequest(err.message));
   });
 
-module.exports = { singleImage, MAX_BYTES };
+const DOC_MAX_BYTES = 10 * 1024 * 1024;
+const DOC_TYPES = ['application/pdf', ...IMAGE_TYPES];
+
+const documentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: DOC_MAX_BYTES, files: 1, fields: 20 },
+  fileFilter(_req, file, cb) {
+    if (DOC_TYPES.includes(file.mimetype)) return cb(null, true);
+    cb(ApiError.badRequest('Upload a PDF, JPG, PNG or WebP file.'));
+  },
+});
+
+/** One PDF or image (up to 10 MB) in `field`, alongside ordinary form fields. */
+const singleDocument = (field) => (req, res, next) =>
+  documentUpload.single(field)(req, res, (err) => {
+    if (!err) {
+      if (!req.file) return next(ApiError.badRequest(`Attach a file in the "${field}" field.`));
+      return next();
+    }
+    if (err instanceof ApiError) return next(err);
+    if (err.code === 'LIMIT_FILE_SIZE') return next(ApiError.badRequest('That file is over 10 MB. Choose a smaller one.'));
+    next(ApiError.badRequest(err.message));
+  });
+
+module.exports = { singleImage, singleDocument, MAX_BYTES };

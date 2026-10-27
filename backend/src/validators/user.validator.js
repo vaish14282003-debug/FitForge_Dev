@@ -45,4 +45,14 @@ const assignTrainer = Joi.object({
   trainerId: objectId.allow(null).required(),
 });
 
-module.exports = { updateMe, changePassword, createUser, listQuery, idParam, assignTrainer };
+const updateUser = Joi.object({
+  name,
+  phone: Joi.string()
+    .trim()
+    .pattern(/^\+?[0-9 ()-]{7,20}$/)
+    .allow('')
+    .messages({ 'string.pattern.base': 'Enter a valid phone number' }),
+  isActive: Joi.boolean(),
+}).min(1);
+
+module.exports = { updateMe, changePassword, createUser, listQuery, idParam, assignTrainer, updateUser };

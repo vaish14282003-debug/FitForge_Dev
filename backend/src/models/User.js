@@ -27,6 +27,14 @@ const userSchema = new mongoose.Schema(
     heightCm: { type: Number, default: null, min: 100, max: 250 },
     dateOfBirth: { type: String, default: null, match: /^\d{4}-\d{2}-\d{2}$/ },
     fitnessGoal: { type: String, enum: [...FITNESS_GOALS, null], default: null },
+    // Daily nutrition targets a member sets for themselves.
+    nutritionGoals: {
+      calories: { type: Number, default: null, min: 800, max: 6000 },
+      protein: { type: Number, default: null, min: 0, max: 500 },
+      carbs: { type: Number, default: null, min: 0, max: 1000 },
+      fat: { type: Number, default: null, min: 0, max: 500 },
+      waterMl: { type: Number, default: null, min: 0, max: 10000 },
+    },
     // Member goals, used for goal progress on the Progress page.
     goals: {
       targetWeight: { type: Number, default: null, min: 20, max: 400 },

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const AUTH_PAGES = ["/login", "/register"];
+const AUTH_PAGES = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 // Optimistic redirect only: it checks that a session marker exists, not that it is valid.
 // Real enforcement is the API's authenticate/authorize middleware.
@@ -37,5 +37,8 @@ export const config = {
     "/profile/:path*",
     "/schedule/:path*",
     "/announcements/:path*",
+    "/resources/:path*",
+    "/nutrition/:path*",
+    "/reports/:path*",
   ],
 };

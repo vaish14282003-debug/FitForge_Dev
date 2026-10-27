@@ -19,5 +19,10 @@ router.use('/schedule', require('./schedule.routes'));
 const notificationRoutes = require('./notification.routes');
 router.use('/notifications', notificationRoutes.notifications);
 router.use('/announcements', notificationRoutes.announcements);
+const extras = require('./extras.routes');
+router.use('/clients', extras.clientRoutes);
+router.use('/resources', extras.resourceRoutes);
+router.use('/nutrition', extras.nutritionRoutes);
+router.use('/reports', extras.reportRoutes);
 
 module.exports = router;

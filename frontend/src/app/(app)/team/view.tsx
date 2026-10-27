@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Pencil } from "lucide-react";
+import { EditPersonDialog } from "@/components/team/edit-person-dialog";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -130,6 +132,7 @@ export default function TeamPage() {
 
   const [selected, setSelected] = useState<ManagedRole | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<User | null>(null);
   const tab = tabs.find((t) => t.role === selected) ?? tabs[0];
 
   const users = useUsers(tab?.role ?? "MEMBER", !!tab);
@@ -189,11 +192,14 @@ export default function TeamPage() {
                 <th className="px-6 py-3 font-medium">Email</th>
                 {tab.role === "MEMBER" && <th className="px-6 py-3 font-medium">Trainer</th>}
                 <th className="px-6 py-3 font-medium">Joined</th>
+                <th className="px-6 py-3 font-medium">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {users.data?.map((user) => (
-                <tr key={user.id} className="transition-colors hover:bg-white/[0.03]">
+                <tr key={user.id} className={cn("transition-colors hover:bg-white/[0.03]", !user.isActive && "opacity-60")}>
                   <td className="px-6 py-4">
                     <span className="flex items-center gap-3 font-medium">
                       <Avatar name={user.name} src={user.avatarUrl} />
@@ -204,13 +210,14 @@ export default function TeamPage() {
                       ) : (
                         user.name
                       )}
+                      {!user.isActive && <span className="rounded-full bg-white/[0.08] px-2 py-0.5 text-xs font-normal text-muted-foreground">Deactivated</span>}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-muted-foreground">{user.email}</td>
                   {tab.role === "MEMBER" && (
                     <td className="px-6 py-3">
                       {trainers.data ? (
-                        <TrainerSelect member={user} trainers={trainers.data} />
+                        <TrainerSelect member={user} trainers={trainers.data.filter((t) => t.isActive)} />
                       ) : (
                         <span className="text-muted-foreground">{user.trainer?.name ?? "—"}</span>
                       )}
@@ -219,12 +226,18 @@ export default function TeamPage() {
                   <td className="px-6 py-4 text-muted-foreground">
                     {new Date(user.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button size="sm" variant="ghost" aria-label={`Edit ${user.name}`} onClick={() => setEditing(user)}>
+                      <Pencil className="size-4" aria-hidden />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Card>
       )}
+      <EditPersonDialog person={editing} onClose={() => setEditing(null)} />
     </>
   );
 }

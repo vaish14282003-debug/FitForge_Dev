@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -52,6 +54,11 @@ export function LoginForm() {
             {...register("password")}
           />
         </Field>
+        <div className="-mt-2 text-right">
+          <Link href="/forgot-password" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <FormError message={login.error?.message} />
         <Button type="submit" className="w-full" loading={login.isPending}>
           {login.isPending ? "Logging in…" : "Log in"}
