@@ -18,16 +18,30 @@ const Availability = require('../src/models/Availability');
 const Booking = require('../src/models/Booking');
 const GymClass = require('../src/models/GymClass');
 const { seedDemoSchedule } = require('../src/data/demoSchedule');
+const Notification = require('../src/models/Notification');
+const Announcement = require('../src/models/Announcement');
+const ClientNote = require('../src/models/ClientNote');
+const Resource = require('../src/models/Resource');
+const NutritionLog = require('../src/models/NutritionLog');
+const PasswordReset = require('../src/models/PasswordReset');
 const { seedDemoProgress } = require('../src/data/demoProgress');
 const { loadExerciseLibrary } = require('../src/data/loadExercises');
 
 const PASSWORD = 'Password123!';
 
+const isLocalDatabase = (uri) => /^mongodb:\/\/(localhost|127\.0\.0\.1|mongo)(:\d+)?\//.test(uri);
+
 async function seed() {
   if (env.isProd) throw new Error('Refusing to seed a production database');
+  // Seeding wipes everything. Anything but a database on this machine needs an explicit --yes.
+  if (!isLocalDatabase(env.mongoUri) && !process.argv.includes('--yes')) {
+    throw new Error(
+      'This would DELETE ALL DATA in a remote database (e.g. MongoDB Atlas). If you really mean it, run: npm run seed -- --yes'
+    );
+  }
   await connectDb();
   await Promise.all(
-    [User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance, Membership, MembershipPlan, Availability, Booking, GymClass].map((model) => model.deleteMany({}))
+    [User, Gym, RefreshToken, Exercise, WorkoutPlan, WorkoutSession, BodyMetric, Attendance, Membership, MembershipPlan, Availability, Booking, GymClass, Notification, Announcement, ClientNote, Resource, NutritionLog, PasswordReset].map((model) => model.deleteMany({}))
   );
   await loadExerciseLibrary();
 

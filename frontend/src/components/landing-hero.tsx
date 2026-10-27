@@ -6,11 +6,10 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ArrowUpRight, Award, Crown, X } from "lucide-react";
 
-// Hotlinked from a third-party CDN; set NEXT_PUBLIC_HERO_VIDEO_URL (e.g. "/hero.mp4" in public/)
+// Optional looping clip you own the rights to, e.g. "/hero.mp4" in public/. Without one the hero
 // to serve our own copy. The gym photo shows underneath until the video starts, or if it fails.
-const HERO_VIDEO =
-  process.env.NEXT_PUBLIC_HERO_VIDEO_URL ||
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260606_154941_df1a96e1-a06f-450c-bd02-d863414cc1a0.mp4";
+// shows the gym photo. (The earlier placeholder clip was third-party footage and was removed.)
+const HERO_VIDEO = process.env.NEXT_PUBLIC_HERO_VIDEO_URL;
 
 const NAV_LINKS = [
   { label: "Members", href: "#members" },
@@ -60,15 +59,17 @@ export function LandingHero() {
         className="object-cover"
         aria-hidden
       />
-      <video
-        className="absolute inset-0 h-full w-full object-cover"
-        src={HERO_VIDEO}
-        autoPlay
-        muted
-        loop
-        playsInline
-        aria-hidden
-      />
+      {HERO_VIDEO && (
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          src={HERO_VIDEO}
+          autoPlay
+          muted
+          loop
+          playsInline
+          aria-hidden
+        />
+      )}
       {/* Keeps white text readable over any frame of the video. */}
       <div className="absolute inset-0 bg-linear-to-r from-black/70 via-black/30 to-transparent" aria-hidden />
       <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-black/60 to-transparent" aria-hidden />
