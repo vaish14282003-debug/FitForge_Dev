@@ -48,7 +48,10 @@ Fitness tracking and gym management for members, trainers and gym owners.
   capacity; members join and leave. Members see "Up next" on their dashboard; trainers see today's
   sessions.
 
-Notifications and announcements are not built yet.
+- **Notifications** (step 8): a bell with unread count for everyone. Alerts for plans assigned,
+  workout feedback, sessions booked or cancelled, classes cancelled, memberships added or ending
+  soon, announcements and trainer messages. Owners post announcements to everyone, members, trainers
+  or staff; trainers message their clients.
 
 ### File storage
 

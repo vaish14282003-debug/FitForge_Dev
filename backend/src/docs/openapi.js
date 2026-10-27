@@ -42,6 +42,7 @@ module.exports = {
     { name: 'Progress', description: 'Body weight and measurements, goals, strength and volume over time' },
     { name: 'Memberships', description: 'Plans and prices, selling and renewing memberships, payments and revenue' },
     { name: 'Schedule', description: 'Trainer hours, 1-on-1 session booking, and group classes' },
+    { name: 'Notifications', description: 'In-app alerts, announcements and trainer messages' },
     { name: 'Files', description: 'Uploaded images, served only within the owning gym' },
     { name: 'Attendance', description: 'Front-desk QR check-in, manual check-in, visit history and daily counts' },
   ],
@@ -325,6 +326,31 @@ module.exports = {
           spotsLeft: { type: 'integer', example: 4 },
           attendees: { type: 'array', items: { type: 'string' }, description: 'Member ids' },
           cancelledAt: { type: 'string', format: 'date-time', nullable: true },
+        },
+      },
+      Notification: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          type: { type: 'string', enum: ['PLAN_ASSIGNED', 'WORKOUT_REVIEWED', 'BOOKING_CREATED', 'BOOKING_CANCELLED', 'CLASS_CANCELLED', 'MEMBERSHIP_ADDED', 'MEMBERSHIP_EXPIRING', 'ANNOUNCEMENT', 'MESSAGE', 'RESOURCE_SHARED'] },
+          title: { type: 'string' },
+          body: { type: 'string', description: 'For booking and class alerts, an ISO time the app formats locally' },
+          link: { type: 'string', nullable: true, example: '/schedule' },
+          actor: { allOf: [ref('UserRef')], nullable: true },
+          readAt: { type: 'string', format: 'date-time', nullable: true },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      Announcement: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string', example: 'Closed on Diwali' },
+          body: { type: 'string' },
+          audience: { type: 'string', enum: ['EVERYONE', 'MEMBERS', 'TRAINERS', 'STAFF'] },
+          pinned: { type: 'boolean' },
+          author: ref('UserRef'),
+          createdAt: { type: 'string', format: 'date-time' },
         },
       },
       Error: {
@@ -1395,6 +1421,54 @@ module.exports = {
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: { 200: { description: 'Cancelled', content: json({ type: 'object', properties: { class: ref('GymClass') } }) }, 401: unauthorized, 403: forbidden, 404: errorResponse('Class not found') },
       },
+    },
+
+    '/notifications': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Your alerts, newest first, with the unread count',
+        description: 'Members also get a one-off "membership ends in N days" alert inside the last 3 days.',
+        parameters: [{ name: 'limit', in: 'query', schema: { type: 'integer', default: 30 } }, { name: 'tz', in: 'query', schema: { type: 'integer' } }],
+        responses: { 200: { description: 'Alerts', content: json({ type: 'object', properties: { notifications: { type: 'array', items: ref('Notification') }, unread: { type: 'integer' } } }) }, 401: unauthorized },
+      },
+    },
+    '/notifications/unread-count': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'How many unread alerts you have (for the bell badge)',
+        responses: { 200: { description: 'Count', content: json({ type: 'object', properties: { unread: { type: 'integer' } } }) }, 401: unauthorized },
+      },
+    },
+    '/notifications/read-all': {
+      post: { tags: ['Notifications'], summary: 'Mark every alert read', responses: { 200: { description: 'Done' }, 401: unauthorized } },
+    },
+    '/notifications/{id}/read': {
+      post: { tags: ['Notifications'], summary: 'Mark one alert read', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'Done' }, 401: unauthorized, 404: errorResponse('Not found') } },
+    },
+    '/notifications/messages': {
+      post: {
+        tags: ['Notifications'],
+        summary: 'Send a message to members',
+        description: 'Needs `clients:read:assigned`. Trainers can message only their own clients; owners anyone in the gym.',
+        requestBody: { required: true, content: json({ type: 'object', required: ['memberIds', 'title'], properties: { memberIds: { type: 'array', items: { type: 'string' } }, title: { type: 'string' }, body: { type: 'string' } } }) },
+        responses: { 201: { description: 'Sent' }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/announcements': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Announcements for your role, pinned first',
+        responses: { 200: { description: 'Announcements', content: json({ type: 'object', properties: { announcements: { type: 'array', items: ref('Announcement') } } }) }, 401: unauthorized },
+      },
+      post: {
+        tags: ['Notifications'],
+        summary: 'Post an announcement (owners); everyone in the audience gets an alert',
+        requestBody: { required: true, content: json({ type: 'object', required: ['title', 'body'], properties: { title: { type: 'string' }, body: { type: 'string' }, audience: { type: 'string', enum: ['EVERYONE', 'MEMBERS', 'TRAINERS', 'STAFF'] }, pinned: { type: 'boolean' } } }) },
+        responses: { 201: { description: 'Posted' }, 400: badRequest, 401: unauthorized, 403: forbidden },
+      },
+    },
+    '/announcements/{id}': {
+      delete: { tags: ['Notifications'], summary: 'Delete an announcement (owners)', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 204: { description: 'Deleted' }, 401: unauthorized, 403: forbidden, 404: errorResponse('Not found') } },
     },
   },
 };

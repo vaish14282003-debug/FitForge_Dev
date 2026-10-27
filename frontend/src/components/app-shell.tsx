@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CalendarDays, ChartLine, ClipboardList, CreditCard, Dumbbell, History, LayoutDashboard, Library, LogOut, ScanLine, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useLogout, useSession } from "@/hooks/use-session";
@@ -113,7 +114,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <NotificationBell />
             <Link
               href="/profile"
               aria-label="Your profile"

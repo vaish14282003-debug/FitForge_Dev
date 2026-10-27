@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarCheck, CalendarClock, Check, ClipboardList, Copy, IdCard, IndianRupee, RefreshCw, ScanLine, UserCog, Users } from "lucide-react";
+import { CalendarCheck, CalendarClock, Check, ClipboardList, Copy, IdCard, IndianRupee, Megaphone, RefreshCw, ScanLine, UserCog, Users } from "lucide-react";
+import { PostAnnouncementDialog } from "@/components/notifications/announcement-bits";
 import { ChartCard, DataTable, shortDate } from "@/components/progress/chart-card";
 import { CheckInChart, RevenueChart } from "@/components/progress/charts";
 import { PageHeader, StatCard } from "@/components/stat-card";
@@ -86,6 +87,7 @@ export default function OwnerDashboard() {
   const { data: gym } = useGym();
   const { data: overview, isPending } = useGymOverview();
   const attendance = useAttendanceStats(14, true);
+  const [posting, setPosting] = useState(false);
   const memberships = useMembershipOverview();
   const revenue = memberships.data?.revenue;
   const revenueChange = revenue ? revenue.thisMonth - revenue.lastMonth : 0;
@@ -105,10 +107,16 @@ export default function OwnerDashboard() {
         }
         subtitle="Members, trainers and the numbers that keep your gym running."
         actions={
-          <Link href="/plans" className={buttonClass({ variant: "outline" })}>
-            <ClipboardList className="size-4" aria-hidden />
-            Training plans
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/plans" className={buttonClass({ variant: "outline" })}>
+              <ClipboardList className="size-4" aria-hidden />
+              Training plans
+            </Link>
+            <Button onClick={() => setPosting(true)}>
+              <Megaphone className="size-4" aria-hidden />
+              Post announcement
+            </Button>
+          </div>
         }
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -197,6 +205,7 @@ export default function OwnerDashboard() {
       >
         {attendance.isPending ? <Skeleton className="h-56 w-full" /> : <CheckInChart daily={attendance.data!.daily} />}
       </ChartCard>
+      <PostAnnouncementDialog open={posting} onClose={() => setPosting(false)} />
     </>
   );
 }

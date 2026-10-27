@@ -5,6 +5,9 @@ const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const { ROLES, PERMISSIONS, can } = require('../config/roles');
 const { dayKey, addDays } = require('../utils/dates');
+const { notify } = require('../services/notify');
+
+const when = (date) => date.toISOString();
 
 const MINUTE = 60 * 1000;
 const PERSON = 'name email avatarKey';
@@ -141,6 +144,16 @@ async function createBooking(req, res) {
 
   try {
     const booking = await Booking.create({ gym: req.user.gym, trainer: trainer._id, member: member._id, ...slot, notes, bookedBy: req.user._id });
+    // Tell whoever didn't make the booking. The app formats the time from `body` in the reader's timezone.
+    const other = req.user.role === ROLES.MEMBER ? trainer : member;
+    await notify([other._id], {
+      gym: req.user.gym,
+      type: 'BOOKING_CREATED',
+      title: req.user.role === ROLES.MEMBER ? `${member.name} booked a session` : `${trainer.name} booked you a session`,
+      body: when(slot.startsAt),
+      link: '/schedule',
+      actor: req.user._id,
+    });
     await booking.populate([{ path: 'trainer', select: PERSON }, { path: 'member', select: PERSON }]);
     res.status(201).json({ booking });
   } catch (err) {
@@ -181,6 +194,14 @@ async function cancelBooking(req, res) {
   booking.status = 'CANCELLED';
   booking.cancelledBy = req.user._id;
   await booking.save();
+  await notify([booking.member, booking.trainer], {
+    gym: req.user.gym,
+    type: 'BOOKING_CANCELLED',
+    title: `${req.user.name} cancelled a session`,
+    body: when(booking.startsAt),
+    link: '/schedule',
+    actor: req.user._id,
+  });
   await booking.populate([{ path: 'trainer', select: PERSON }, { path: 'member', select: PERSON }]);
   res.json({ booking });
 }
@@ -281,6 +302,14 @@ async function cancelClass(req, res) {
   if (!mayCancel) throw ApiError.forbidden('Only the class trainer, its creator or the owner can cancel it');
   gymClass.cancelledAt = new Date();
   await gymClass.save();
+  await notify(gymClass.attendees, {
+    gym: req.user.gym,
+    type: 'CLASS_CANCELLED',
+    title: `${gymClass.title} was cancelled`,
+    body: when(gymClass.startsAt),
+    link: '/schedule',
+    actor: req.user._id,
+  });
   await gymClass.populate('trainer', PERSON);
   res.json({ class: gymClass });
 }

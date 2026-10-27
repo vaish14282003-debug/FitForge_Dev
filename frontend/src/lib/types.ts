@@ -282,3 +282,36 @@ export type GymClass = {
   attendees: string[];
   cancelledAt: string | null;
 };
+
+export type NotificationType =
+  | "PLAN_ASSIGNED"
+  | "WORKOUT_REVIEWED"
+  | "BOOKING_CREATED"
+  | "BOOKING_CANCELLED"
+  | "CLASS_CANCELLED"
+  | "MEMBERSHIP_ADDED"
+  | "MEMBERSHIP_EXPIRING"
+  | "ANNOUNCEMENT"
+  | "MESSAGE"
+  | "RESOURCE_SHARED";
+
+export type AppNotification = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  link: string | null;
+  actor: UserRef | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type Announcement = {
+  id: string;
+  title: string;
+  body: string;
+  audience: "EVERYONE" | "MEMBERS" | "TRAINERS" | "STAFF";
+  pinned: boolean;
+  author: UserRef;
+  createdAt: string;
+};

@@ -6,6 +6,20 @@ afterEach(clearDb);
 afterAll(stopDb);
 
 const today = dayKey(new Date());
+// Start date of a membership of `months` that ends exactly `daysLeft` days from today, whatever the month lengths.
+// A start date whose period ends about `daysLeft` days from now. Month-end clamping means some end
+// dates are impossible (no 1-month plan ends on 30 Oct), so this tries the nearest days too and
+// reports which one it hit.
+function startEndingIn(daysLeft, months = 1) {
+  for (const left of [daysLeft, daysLeft - 1, daysLeft + 1]) {
+    const target = addDays(today, left);
+    for (let offset = -4; offset <= 4; offset += 1) {
+      const start = addDays(addMonths(target, -months), offset);
+      if (periodEnd(start, months) === target) return { start, left };
+    }
+  }
+  throw new Error(`No ${months}-month period ends near ${daysLeft} days from now`);
+}
 let owner, staff, trainer, member, monthly, quarterly;
 
 beforeEach(async () => {
@@ -110,11 +124,11 @@ describe('selling and renewing', () => {
 describe('roster, overview and member view', () => {
   it('labels members ACTIVE, EXPIRING, EXPIRED or NONE', async () => {
     await registerMember(owner.gym.joinCode, { email: 'other@example.com', name: 'Omar Other' });
-    // Ends in 3 days: started 1 month minus 4 days ago.
-    await sell(staff.agent, { startDate: addDays(addMonths(today, -1), 4) });
+    const ending = startEndingIn(3);
+    await sell(staff.agent, { startDate: ending.start });
     let roster = (await staff.agent.get('/api/memberships/roster')).body.roster;
     const byEmail = Object.fromEntries(roster.map((r) => [r.member.email, r]));
-    expect(byEmail['member@example.com']).toMatchObject({ status: 'EXPIRING', current: { daysLeft: 3 } });
+    expect(byEmail['member@example.com']).toMatchObject({ status: 'EXPIRING', current: { daysLeft: ending.left } });
     expect(byEmail['other@example.com'].status).toBe('NONE');
 
     // Renewing in advance takes them off "expiring".
@@ -124,7 +138,7 @@ describe('roster, overview and member view', () => {
   });
 
   it('overview counts expiring and pending; revenue only for owners', async () => {
-    await sell(staff.agent, { startDate: addDays(addMonths(today, -1), 3), payment: { status: 'PENDING' } });
+    await sell(staff.agent, { startDate: startEndingIn(2).start, payment: { status: 'PENDING' } });
     const forStaff = (await staff.agent.get('/api/memberships/overview')).body.overview;
     expect(forStaff).toMatchObject({ activeMembers: 1, pendingPayments: { count: 1, amount: 1500 } });
     expect(forStaff.expiringSoon).toHaveLength(1);

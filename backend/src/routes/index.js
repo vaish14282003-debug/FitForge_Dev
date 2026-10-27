@@ -16,5 +16,8 @@ router.use('/membership-plans', membershipRoutes.plans);
 router.use('/memberships', membershipRoutes.memberships);
 router.use('/files', require('./file.routes'));
 router.use('/schedule', require('./schedule.routes'));
+const notificationRoutes = require('./notification.routes');
+router.use('/notifications', notificationRoutes.notifications);
+router.use('/announcements', notificationRoutes.announcements);
 
 module.exports = router;

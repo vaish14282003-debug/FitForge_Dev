@@ -4,6 +4,7 @@ const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const { ROLES, PERMISSIONS, can } = require('../config/roles');
 const { visibleTo } = require('./exercise.controller');
+const { notify } = require('../services/notify');
 
 const POPULATE = [
   { path: 'days.exercises.exercise', select: 'name muscleGroup equipment imageKey instructions' },
@@ -81,8 +82,17 @@ async function setAssignees(req, res) {
     );
   }
 
+  const added = memberIds.filter((id) => !plan.assignedTo.some((existing) => existing.equals(id)));
   plan.assignedTo = memberIds;
   await plan.save();
+  await notify(added, {
+    gym: req.user.gym,
+    type: 'PLAN_ASSIGNED',
+    title: `New plan: ${plan.name}`,
+    body: `${req.user.name} assigned you a ${plan.days.length}-day plan. Open it to see today's workout.`,
+    link: '/workouts',
+    actor: req.user._id,
+  });
   await plan.populate(POPULATE);
   res.json({ plan });
 }

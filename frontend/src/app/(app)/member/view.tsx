@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { CalendarCheck, CalendarDays, ChevronRight, CircleAlert, CreditCard, Dumbbell, Flame, MapPin } from "lucide-react";
+import { LatestAnnouncement } from "@/components/notifications/announcement-bits";
 import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TodaysWorkout } from "@/components/workouts/todays-workout";
@@ -100,6 +101,8 @@ export default function MemberDashboard() {
           }
         />
       </div>
+
+      <LatestAnnouncement />
 
       <Link
         href="/schedule"

@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, ChevronRight, ClipboardCheck, ClipboardList, Users } from "lucide-react";
+import { useState } from "react";
+import { CalendarClock, ChevronRight, ClipboardCheck, ClipboardList, MessageSquare, Users } from "lucide-react";
 import { EmptyState, PageHeader, StatCard } from "@/components/stat-card";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import { LatestAnnouncement, MessageClientsDialog } from "@/components/notifications/announcement-bits";
 import { Agenda } from "@/components/schedule/agenda";
+import { Button } from "@/components/ui/button";
 import { ReviewQueue } from "@/components/workouts/review-queue";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClients } from "@/hooks/use-gym";
@@ -21,6 +24,7 @@ export default function TrainerDashboard() {
   const { data: clients, isPending: clientsPending } = useClients();
   const { data: plans, isPending: plansPending } = usePlans();
   const pending = useSessions({ pendingReview: true, limit: 20 });
+  const [messaging, setMessaging] = useState(false);
   const bookings = useBookings(1);
   const classes = useClasses(1);
   const today = new Date().toLocaleDateString("en-CA");
@@ -40,6 +44,12 @@ export default function TrainerDashboard() {
           </>
         }
         subtitle="Your clients and what needs you today."
+        actions={
+          <Button variant="outline" disabled={!clients?.length} onClick={() => setMessaging(true)}>
+            <MessageSquare className="size-4" aria-hidden />
+            Message clients
+          </Button>
+        }
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard index={0} highlight label="My clients" icon={Users} loading={clientsPending} value={clients?.length} />
@@ -47,6 +57,8 @@ export default function TrainerDashboard() {
         <StatCard index={2} label="Today's sessions" icon={CalendarClock} loading={bookings.isPending || classes.isPending} value={todaysBookings.length + todaysClasses.length} hint={`${todaysBookings.length} 1-on-1 · ${todaysClasses.length} class${todaysClasses.length === 1 ? "" : "es"}`} />
         <StatCard index={3} label="Pending reviews" icon={ClipboardCheck} loading={pending.isPending} value={pending.data?.length} />
       </div>
+
+      <LatestAnnouncement />
 
       <div className="mt-12 mb-4 flex items-baseline justify-between">
         <h2 className="font-display text-3xl font-semibold">Today</h2>
@@ -88,6 +100,7 @@ export default function TrainerDashboard() {
           </ul>
         </Card>
       )}
+      <MessageClientsDialog open={messaging} clients={clients ?? []} onClose={() => setMessaging(false)} />
     </>
   );
 }

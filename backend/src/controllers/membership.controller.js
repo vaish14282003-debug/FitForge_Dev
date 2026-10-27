@@ -4,6 +4,7 @@ const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const { ROLES, PERMISSIONS, can } = require('../config/roles');
 const { dayKey, addDays, periodEnd, daysBetween } = require('../utils/dates');
+const { notify } = require('../services/notify');
 
 // Shown as "expiring" on dashboards and the roster once this close to the end date.
 const EXPIRING_DAYS = 7;
@@ -74,7 +75,7 @@ async function assertNoOverlap(memberId, startDate, endDate) {
 async function sell(req, { member, plan, startDate, payment, notes, renewalOf = null }) {
   const endDate = periodEnd(startDate, plan.durationMonths);
   await assertNoOverlap(member._id, startDate, endDate);
-  return Membership.create({
+  const membership = await Membership.create({
     gym: req.user.gym,
     member: member._id,
     plan: plan._id,
@@ -88,6 +89,15 @@ async function sell(req, { member, plan, startDate, payment, notes, renewalOf = 
     renewalOf,
     createdBy: req.user._id,
   });
+  await notify([member._id], {
+    gym: req.user.gym,
+    type: 'MEMBERSHIP_ADDED',
+    title: renewalOf ? `Membership renewed: ${plan.name}` : `Welcome aboard: ${plan.name} membership`,
+    body: `Valid from ${startDate} to ${endDate}.${payment.status === 'PENDING' ? ' Payment is still due at the front desk.' : ''}`,
+    link: '/member',
+    actor: req.user._id,
+  });
+  return membership;
 }
 
 // ---- plans

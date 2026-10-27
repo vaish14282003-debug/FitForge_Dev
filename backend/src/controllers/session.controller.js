@@ -3,6 +3,7 @@ const WorkoutSession = require('../models/WorkoutSession');
 const WorkoutPlan = require('../models/WorkoutPlan');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
+const { notify } = require('../services/notify');
 const { ROLES, PERMISSIONS, can } = require('../config/roles');
 
 const MAX_SESSION_SECONDS = 6 * 60 * 60;
@@ -211,6 +212,14 @@ async function reviewSession(req, res) {
 
   session.review = { reviewedBy: req.user._id, reviewedAt: new Date(), comment: req.valid.body.comment };
   await session.save();
+  await notify([session.member], {
+    gym: req.user.gym,
+    type: 'WORKOUT_REVIEWED',
+    title: `${req.user.name} reviewed your ${session.dayName} workout`,
+    body: req.valid.body.comment,
+    link: '/history',
+    actor: req.user._id,
+  });
   await session.populate([
     { path: 'member', select: 'name email' },
     { path: 'review.reviewedBy', select: 'name' },
