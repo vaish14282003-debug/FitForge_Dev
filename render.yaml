@@ -21,10 +21,14 @@ services:
         sync: false # e.g. https://fitforge.vercel.app
       - key: APP_URL
         sync: false # same as CLIENT_ORIGIN; used in emailed links
+      - key: RESEND_API_KEY
+        sync: false # resend.com API key (re_...). Or leave empty and set SMTP_URL instead.
       - key: SMTP_URL
-        sync: false # e.g. smtps://user:pass@smtp.example.com:465
+        sync: false # optional alternative to Resend: smtps://user:pass@smtp.example.com:465
       - key: MAIL_FROM
-        value: FitForge <no-reply@fitforge.app>
+        sync: false # e.g. FitForge <no-reply@yourdomain.com>, on a domain verified in Resend
+      - key: SENTRY_DSN
+        sync: false # optional: Sentry project DSN for error tracking
       - key: STORAGE_DRIVER
         value: s3 # Render's disk is wiped on each deploy, so uploads must go to S3
       - key: AWS_REGION

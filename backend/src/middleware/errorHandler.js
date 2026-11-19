@@ -1,12 +1,13 @@
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger');
+const { reportError } = require('../services/errorReporter');
 
 function notFound(req, _res, next) {
   next(ApiError.notFound(`Route ${req.method} ${req.originalUrl} not found`));
 }
 
 // eslint-disable-next-line no-unused-vars
-function errorHandler(err, _req, res, _next) {
+function errorHandler(err, req, res, _next) {
   if (err instanceof ApiError) {
     return res.status(err.status).json({ message: err.message, details: err.details });
   }
@@ -20,6 +21,7 @@ function errorHandler(err, _req, res, _next) {
     return res.status(409).json({ message: 'That value is already in use' });
   }
   logger.error(err);
+  reportError(err, { request: { method: req.method, path: req.baseUrl + req.path }, userId: req.user?.id });
   res.status(500).json({ message: 'Something went wrong' });
 }
 

@@ -378,9 +378,18 @@ module.exports = {
     '/health': {
       get: {
         tags: ['Health'],
-        summary: 'Liveness check',
+        summary: 'Health check for uptime monitors (includes the database connection)',
         security: [],
-        responses: { 200: { description: 'API is up', content: json({ type: 'object', properties: { status: { type: 'string', example: 'ok' } } }) } },
+        responses: {
+          200: {
+            description: 'API and database are up',
+            content: json({ type: 'object', properties: { status: { type: 'string', example: 'ok' }, database: { type: 'string', example: 'ok' } } }),
+          },
+          503: {
+            description: 'API is running but cannot reach the database',
+            content: json({ type: 'object', properties: { status: { type: 'string', example: 'degraded' }, database: { type: 'string', example: 'unavailable' } } }),
+          },
+        },
       },
     },
     '/auth/register': {

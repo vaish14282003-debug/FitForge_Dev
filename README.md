@@ -54,8 +54,9 @@ Fitness tracking and gym management for members, trainers and gym owners.
   or staff; trainers message their clients.
 - **Team management**: owners (and staff, for members) edit people and deactivate or reactivate
   accounts. Deactivating signs them out everywhere; a deactivated trainer's clients are unassigned.
-- **Password reset**: "Forgot password?" emails a single-use link valid for 30 minutes. Without
-  `SMTP_URL` (development) the email, link included, is printed in the API log.
+- **Password reset**: "Forgot password?" emails a single-use link valid for 30 minutes, sent through
+  Resend (`RESEND_API_KEY`) or SMTP (`SMTP_URL`). Without either (development) the email, link
+  included, is printed in the API log.
 - **Trainer tools**: private notes on each client, and shared files (PDF or image, up to 10 MB)
   that clients find on their Workouts page.
 - **Nutrition**: members set calorie, macro and water goals and log meals and water by day;
@@ -150,7 +151,9 @@ tests against the production Docker images and a throwaway database.
 ## Deploying
 
 See [DEPLOY.md](DEPLOY.md): Atlas + Render (API, `render.yaml`) + Vercel (website), with S3 for
-uploads and SMTP for email. `docker compose --profile full up --build` runs the whole stack locally.
+uploads, Resend (or SMTP) for email and optional Sentry error tracking. In production the API refuses
+to start with a placeholder login secret or a non-https site address, and demo `@fitforge.dev`
+accounts cannot sign in. `docker compose --profile full up --build` runs the whole stack locally.
 
 Runs against an in-memory MongoDB (downloaded once, on the first run). The test script sets
 `--experimental-vm-modules` because the MongoDB driver uses a dynamic `import()` that Jest

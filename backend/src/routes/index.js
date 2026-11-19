@@ -1,8 +1,13 @@
 const { Router } = require('express');
+const mongoose = require('mongoose');
 
 const router = Router();
 
-router.get('/health', (_req, res) => res.json({ status: 'ok' }));
+// For uptime monitors and the hosting platform: 503 whenever the database is unreachable.
+router.get('/health', (_req, res) => {
+  const database = mongoose.connection.readyState === 1 ? 'ok' : 'unavailable';
+  res.status(database === 'ok' ? 200 : 503).json({ status: database === 'ok' ? 'ok' : 'degraded', database });
+});
 router.use('/auth', require('./auth.routes'));
 router.use('/users', require('./user.routes'));
 router.use('/gym', require('./gym.routes'));

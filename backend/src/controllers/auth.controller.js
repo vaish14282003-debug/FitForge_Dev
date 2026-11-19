@@ -6,6 +6,8 @@ const RefreshToken = require('../models/RefreshToken');
 const PasswordReset = require('../models/PasswordReset');
 const env = require('../config/env');
 const { sendMail } = require('../services/mailer');
+const { passwordResetEmail } = require('../services/emailTemplates');
+const { isDemoAccount } = require('../config/demo');
 const ApiError = require('../utils/ApiError');
 const logger = require('../config/logger');
 const { ROLES, permissionsFor } = require('../config/roles');
@@ -24,6 +26,7 @@ async function register(req, res) {
   const { name, email, password, role, gymName, gymCode } = req.valid.body;
 
   if (await User.exists({ email })) throw ApiError.conflict('An account with this email already exists');
+  if (env.isLive && isDemoAccount(email)) throw ApiError.badRequest('That email address is reserved for demo accounts');
 
   const user = new User({ name, email, role, passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS) });
 
@@ -54,7 +57,8 @@ async function login(req, res) {
 
   const user = await User.findOne({ email }).select('+passwordHash');
   const passwordOk = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
-  if (!user || !passwordOk) throw ApiError.unauthorized('Incorrect email or password');
+  // Demo accounts share a public password, so a live deployment never lets them in.
+  if (!user || !passwordOk || (env.isLive && isDemoAccount(user.email))) throw ApiError.unauthorized('Incorrect email or password');
   if (!user.isActive) throw ApiError.forbidden('This account has been deactivated');
 
   await setAuthCookies(res, user);
@@ -115,11 +119,7 @@ async function forgotPassword(req, res) {
     await PasswordReset.create({ user: user._id, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + RESET_MINUTES * 60 * 1000) });
     const link = `${env.appUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
     try {
-      await sendMail({
-        to: user.email,
-        subject: 'Reset your FitForge password',
-        text: `Hi ${user.name.split(' ')[0]},\n\nSomeone asked to reset your FitForge password. If it was you, open this link within ${RESET_MINUTES} minutes:\n\n${link}\n\nIf it wasn't you, you can ignore this email; your password stays the same.`,
-      });
+      await sendMail({ to: user.email, ...passwordResetEmail({ name: user.name, link, minutes: RESET_MINUTES }) });
     } catch (err) {
       logger.error(err);
     }

@@ -11,10 +11,14 @@ const schema = Joi.object({
   CLIENT_ORIGIN: Joi.string().uri().default('http://localhost:3000'),
   // Public address of the website, used in links inside emails (password reset).
   APP_URL: Joi.string().uri().when('NODE_ENV', { is: 'production', then: Joi.required() }),
-  // e.g. smtps://user:pass@smtp.example.com:465. Without it, emails are written to the log (dev only).
+  // Email delivery: a Resend API key (preferred) or an SMTP URL such as
+  // smtps://user:pass@smtp.example.com:465. Without either, emails are written to the log (dev only).
+  RESEND_API_KEY: Joi.string().pattern(/^re_/).allow(''),
   SMTP_URL: Joi.string().uri({ scheme: ['smtp', 'smtps'] }).allow(''),
   MAIL_FROM: Joi.string().default('FitForge <no-reply@fitforge.app>'),
   LOG_LEVEL: Joi.string().default('info'),
+  // Error tracking. Optional: without it, errors only go to the log.
+  SENTRY_DSN: Joi.string().uri().allow(''),
   // Login/sign-up/reset attempts allowed per IP per 15 minutes. Raise only for automated test runs.
   AUTH_RATE_LIMIT: Joi.number().integer().min(1).default(20),
   // Proxies in front of the API that add X-Forwarded-For. 1 locally (the website); 2 for
@@ -35,7 +39,7 @@ if (error) {
   throw new Error(`Invalid environment configuration: ${error.details.map((d) => d.message).join(', ')}`);
 }
 
-module.exports = {
+const config = {
   nodeEnv: value.NODE_ENV,
   isProd: value.NODE_ENV === 'production',
   isTest: value.NODE_ENV === 'test',
@@ -46,9 +50,11 @@ module.exports = {
   refreshTokenTtlDays: value.REFRESH_TOKEN_TTL_DAYS,
   clientOrigin: value.CLIENT_ORIGIN,
   appUrl: value.APP_URL || value.CLIENT_ORIGIN,
+  resendApiKey: value.RESEND_API_KEY,
   smtpUrl: value.SMTP_URL,
   mailFrom: value.MAIL_FROM,
   logLevel: value.LOG_LEVEL,
+  sentryDsn: value.SENTRY_DSN,
   authRateLimit: value.AUTH_RATE_LIMIT,
   trustProxy: value.TRUST_PROXY,
   storage: {
@@ -62,3 +68,15 @@ module.exports = {
     },
   },
 };
+
+// A real deployment: production mode on a public address. Production mode on localhost (docker
+// compose, CI's browser tests) keeps development conveniences such as the demo accounts.
+config.isLive = config.isProd && !require('./production').isLocalUrl(config.clientOrigin);
+
+// A live deployment must not run with development shortcuts (see productionProblems).
+if (config.isProd) {
+  const problems = require('./production').productionProblems(config);
+  if (problems.length) throw new Error(`Unsafe production configuration:\n- ${problems.join('\n- ')}`);
+}
+
+module.exports = config;

@@ -22,7 +22,9 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-local-compose-secret-change-me-local-compose-secret}
       CLIENT_ORIGIN: http://localhost:3000
       APP_URL: http://localhost:3000
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
       SMTP_URL: ${SMTP_URL:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
       STORAGE_DRIVER: local
     volumes:
       - uploads:/app/uploads
