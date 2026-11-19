@@ -29,5 +29,6 @@ router.use('/clients', extras.clientRoutes);
 router.use('/resources', extras.resourceRoutes);
 router.use('/nutrition', extras.nutritionRoutes);
 router.use('/reports', extras.reportRoutes);
+router.use('/integrations/strava', require('./strava.routes'));
 
 module.exports = router;

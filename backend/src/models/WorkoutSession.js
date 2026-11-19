@@ -38,6 +38,12 @@ const workoutSessionSchema = new mongoose.Schema(
     durationSeconds: { type: Number, required: true, min: 0 },
     entries: { type: [entrySchema], default: [] },
     notes: { type: String, default: '', maxlength: 500 },
+    // Copy on Strava, if the member connected it (services/strava.js).
+    strava: {
+      activityId: { type: String, default: null },
+      status: { type: String, enum: ['uploaded', 'failed', null], default: null },
+      error: { type: String, default: null },
+    },
     // Derived when the session is saved.
     totalVolume: { type: Number, default: 0 },
     completedSets: { type: Number, default: 0 },

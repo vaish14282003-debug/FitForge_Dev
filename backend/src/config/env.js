@@ -1,6 +1,12 @@
 require('dotenv').config({ quiet: true });
 const Joi = require('joi');
 
+// 32-byte keys given as hex or base64; null for anything else.
+function keyBytes(value) {
+  const bytes = /^[0-9a-fA-F]{64}$/.test(value) ? Buffer.from(value, 'hex') : Buffer.from(value, 'base64');
+  return bytes.length === 32 ? bytes : null;
+}
+
 const schema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'test', 'production').default('development'),
   PORT: Joi.number().port().default(4000),
@@ -19,6 +25,16 @@ const schema = Joi.object({
   LOG_LEVEL: Joi.string().default('info'),
   // Error tracking. Optional: without it, errors only go to the log.
   SENTRY_DSN: Joi.string().uri().allow(''),
+  // Strava (optional): from strava.com/settings/api. Without both, the integration is hidden.
+  STRAVA_CLIENT_ID: Joi.string().pattern(/^\d+$/).allow(''),
+  STRAVA_CLIENT_SECRET: Joi.string().allow(''),
+  // Encrypts third-party tokens (e.g. Strava) stored in the database: 32 random bytes, as 64 hex
+  // characters or base64 (what Render's "generate value" produces). Generate one with:
+  // node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+  TOKEN_ENCRYPTION_KEY: Joi.string()
+    .allow('')
+    .custom((value, helpers) => (value === '' || keyBytes(value) ? value : helpers.error('any.invalid')))
+    .messages({ 'any.invalid': 'TOKEN_ENCRYPTION_KEY must be 32 random bytes, as 64 hex characters or base64' }),
   // Login/sign-up/reset attempts allowed per IP per 15 minutes. Raise only for automated test runs.
   AUTH_RATE_LIMIT: Joi.number().integer().min(1).default(20),
   // Proxies in front of the API that add X-Forwarded-For. 1 locally (the website); 2 for
@@ -73,6 +89,12 @@ const config = {
   mailFrom: value.MAIL_FROM,
   logLevel: value.LOG_LEVEL,
   sentryDsn: value.SENTRY_DSN,
+  strava: {
+    clientId: value.STRAVA_CLIENT_ID || '',
+    clientSecret: value.STRAVA_CLIENT_SECRET || '',
+  },
+  // Normalised to hex for utils/secretBox.
+  tokenEncryptionKey: value.TOKEN_ENCRYPTION_KEY ? keyBytes(value.TOKEN_ENCRYPTION_KEY).toString('hex') : '',
   authRateLimit: value.AUTH_RATE_LIMIT,
   trustProxy: value.TRUST_PROXY,
   storage: {

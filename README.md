@@ -58,6 +58,10 @@ Fitness tracking and gym management for members, trainers and gym owners.
   manifest + service worker) and opens without signal using the last copy of your plans. A workout
   finished offline is kept on the phone and uploaded automatically when the connection returns, with
   its real finish time; each workout carries an id, so a retried upload is never saved twice.
+- **Strava**: members link Strava from their profile (official "Connect with Strava" flow, tokens
+  stored encrypted and refreshed automatically). Finished workouts, including ones uploaded later
+  from offline, are posted as Weight Training activities with sets and volume; History shows
+  "View on Strava" or "Send to Strava". Disconnecting revokes access on Strava too.
 - **Welcome tour**: new users get a short guided tour of their own navigation (per role, desktop and
   phone), shown once and remembered on their account; replay it from Profile.
 - **Password reset**: "Forgot password?" emails a single-use link valid for 30 minutes, sent through

@@ -29,6 +29,12 @@ services:
         sync: false # e.g. FitForge <no-reply@yourdomain.com>, on a domain verified in Resend
       - key: SENTRY_DSN
         sync: false # optional: Sentry project DSN for error tracking
+      - key: STRAVA_CLIENT_ID
+        sync: false # optional: from strava.com/settings/api (numbers only)
+      - key: STRAVA_CLIENT_SECRET
+        sync: false # optional: from the same page
+      - key: TOKEN_ENCRYPTION_KEY
+        generateValue: true # encrypts stored Strava tokens; changing it disconnects everyone from Strava
       - key: STORAGE_DRIVER
         sync: false # "local" to start (uploads reset on each deploy); "s3" once the AWS_* values are set
       - key: AWS_REGION

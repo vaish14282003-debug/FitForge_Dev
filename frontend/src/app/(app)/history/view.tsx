@@ -9,6 +9,7 @@ import { buttonClass } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SessionDetail, SessionStats } from "@/components/workouts/session-detail";
+import { StravaSessionLink } from "@/components/strava/strava-session-link";
 import { useSessions } from "@/hooks/use-sessions";
 import type { WorkoutSession } from "@/lib/types";
 
@@ -110,7 +111,12 @@ export default function WorkoutHistory() {
         }
         className="max-w-xl"
       >
-        {open && <SessionDetail session={open} />}
+        {open && (
+          <>
+            <SessionDetail session={open} />
+            <StravaSessionLink session={open} className="mt-5 border-t border-white/10 pt-4" />
+          </>
+        )}
       </Dialog>
     </>
   );

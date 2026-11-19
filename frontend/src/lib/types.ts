@@ -140,7 +140,12 @@ export type WorkoutSession = {
   }[];
   prs: { exercise: string; exerciseName: string; weight: number; reps: number }[];
   review: { reviewedBy: { id: string; name: string } | null; reviewedAt: string | null; comment: string };
+  /** Copy on Strava, if the member connected it. */
+  strava?: { activityId: string | null; status: "uploaded" | "failed" | null; error: string | null };
 };
+
+export type StravaConnection = { athleteId: string; athleteName: string; scope: string; expiresAt: string; autoUpload: boolean };
+export type StravaStatus = { available: boolean; connection: StravaConnection | null };
 
 export type TrainingSummary = {
   totalWorkouts: number;

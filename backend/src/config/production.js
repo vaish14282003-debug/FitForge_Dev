@@ -23,6 +23,9 @@ function productionProblems(config) {
       "JWT_ACCESS_SECRET looks like a placeholder. Generate one with: node -e \"console.log(require('crypto').randomBytes(48).toString('hex'))\""
     );
   }
+  if (config.strava?.clientId && !config.tokenEncryptionKey) {
+    problems.push('Strava is set up but TOKEN_ENCRYPTION_KEY is missing: Strava tokens must be stored encrypted.');
+  }
   for (const [name, url] of [['CLIENT_ORIGIN', config.clientOrigin], ['APP_URL', config.appUrl]]) {
     if (!url.startsWith('https://')) problems.push(`${name} must be the website's https:// address (got ${url})`);
   }
