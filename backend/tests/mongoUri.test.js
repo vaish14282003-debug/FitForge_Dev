@@ -34,3 +34,24 @@ describe('MONGO_URI explanations never include the password', () => {
     expect(message).not.toContain(secret);
   });
 });
+
+describe('website address cleanup', () => {
+  const { cleanSiteUrl, cleanSetting } = require('../src/config/mongoUri');
+  it.each([
+    'https://fit-forge.vercel.app',
+    'https://fit-forge.vercel.app/',
+    ' https://fit-forge.vercel.app \n',
+    '"https://fit-forge.vercel.app"',
+    'CLIENT_ORIGIN=https://fit-forge.vercel.app',
+    'fit-forge.vercel.app',
+  ])('normalises %j', (raw) => {
+    expect(cleanSiteUrl('CLIENT_ORIGIN', raw)).toBe('https://fit-forge.vercel.app');
+  });
+
+  it('keeps http for localhost', () => expect(cleanSiteUrl('APP_URL', 'localhost:3000/')).toBe('http://localhost:3000'));
+
+  it('trims other settings without touching their content', () => {
+    expect(cleanSetting('MAIL_FROM', '  FitForge <onboarding@resend.dev> ')).toBe('FitForge <onboarding@resend.dev>');
+    expect(cleanSetting('TRUST_PROXY', '2\n')).toBe('2');
+  });
+});

@@ -34,13 +34,26 @@ const schema = Joi.object({
   AWS_SECRET_ACCESS_KEY: Joi.string().allow(''),
 }).unknown();
 
-const { cleanMongoUri, explainMongoUri } = require('./mongoUri');
+const { cleanSetting, cleanMongoUri, cleanSiteUrl, explainMongoUri } = require('./mongoUri');
 
-const input = { ...process.env, MONGO_URI: cleanMongoUri(process.env.MONGO_URI) };
+// Settings are typed into hosting dashboards by hand: forgive stray spaces, quotes and the like.
+const input = Object.fromEntries(Object.entries(process.env).map(([k, v]) => [k, cleanSetting(k, v)]));
+input.MONGO_URI = cleanMongoUri(process.env.MONGO_URI);
+for (const name of ['CLIENT_ORIGIN', 'APP_URL']) {
+  if (process.env[name] !== undefined) input[name] = cleanSiteUrl(name, process.env[name]);
+}
 const { value, error } = schema.validate(input, { abortEarly: false });
 if (error) {
   // Joi's message for a bad MONGO_URI is vague; replace it with a specific, password-free one.
-  const messages = error.details.map((d) => (d.path[0] === 'MONGO_URI' && input.MONGO_URI ? explainMongoUri(input.MONGO_URI) : d.message));
+  const messages = error.details.map((d) => {
+    const name = d.path[0];
+    if (name === 'MONGO_URI' && input.MONGO_URI) return explainMongoUri(input.MONGO_URI);
+    // Website addresses aren't secret, so show what was received to make the mistake obvious.
+    if ((name === 'CLIENT_ORIGIN' || name === 'APP_URL') && input[name]) {
+      return `${name} must be a website address like https://your-site.vercel.app (got ${JSON.stringify(input[name])})`;
+    }
+    return d.message;
+  });
   throw new Error(`Invalid environment configuration: ${messages.join(', ')}`);
 }
 

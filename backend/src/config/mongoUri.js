@@ -1,12 +1,26 @@
 // Connection strings are usually pasted into a hosting dashboard by hand, so this forgives the
 // harmless copy-paste mistakes and explains the others. Nothing here ever prints the password.
 
-/** Removes surrounding whitespace, quotes and an accidental `MONGO_URI=` prefix. */
-function cleanMongoUri(raw) {
+/** Removes surrounding whitespace, quotes and an accidental `NAME=` prefix from any setting. */
+function cleanSetting(name, raw) {
   if (typeof raw !== 'string') return raw;
-  let value = raw.trim().replace(/^MONGO_URI\s*=\s*/i, '').trim();
+  let value = raw.trim();
+  if (value.toUpperCase().startsWith(name.toUpperCase())) value = value.slice(name.length).replace(/^\s*=\s*/, '').trim();
   if (/^(["'`]).*\1$/s.test(value)) value = value.slice(1, -1).trim();
   return value;
+}
+
+const cleanMongoUri = (raw) => cleanSetting('MONGO_URI', raw);
+
+/**
+ * Website addresses: also adds a missing https:// and drops a trailing slash, because the browser
+ * compares CLIENT_ORIGIN with its own origin exactly (https://site.app, never https://site.app/).
+ */
+function cleanSiteUrl(name, raw) {
+  let value = cleanSetting(name, raw);
+  if (!value) return value;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) value = `${/^(localhost|127\.0\.0\.1)/.test(value) ? 'http' : 'https'}://${value}`;
+  return value.replace(/\/+$/, '');
 }
 
 /** A specific, password-free explanation of why a connection string can't be used. */
@@ -26,4 +40,4 @@ function explainMongoUri(value) {
   return 'MONGO_URI is not a valid connection string. Copy it again from Atlas → Connect → Drivers.';
 }
 
-module.exports = { cleanMongoUri, explainMongoUri };
+module.exports = { cleanSetting, cleanMongoUri, cleanSiteUrl, explainMongoUri };
