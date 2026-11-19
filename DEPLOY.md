@@ -101,7 +101,8 @@ Rather than allowing `0.0.0.0/0` (anyone on the internet), allow only Render:
 ## 8. Strava (optional)
 
 Members can link Strava from **Profile → Connected apps**; every workout they finish then appears
-on Strava as a Weight Training activity.
+on Strava as a Weight Training activity. (Strava is the first of FitForge's provider-based
+integrations; others are added the same way, see README "Adding a fitness service".)
 
 1. Strava requires a subscription to create an API app. Signed in to Strava, open
    **https://www.strava.com/settings/api** and create an app:

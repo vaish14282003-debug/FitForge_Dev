@@ -15,6 +15,7 @@ const ref = (name) => ({ $ref: `#/components/schemas/${name}` });
 const unauthorized = errorResponse('Not signed in, or the session expired');
 const forbidden = errorResponse('Signed in, but this role lacks the permission');
 const badRequest = errorResponse('Validation failed');
+const providerParam = { name: 'provider', in: 'path', required: true, schema: { type: 'string', example: 'strava' }, description: 'Integration id, e.g. strava' };
 
 module.exports = {
   openapi: '3.0.3',
@@ -48,7 +49,7 @@ module.exports = {
     { name: 'Resources', description: 'Files trainers share with clients (PDFs, images)' },
     { name: 'Nutrition', description: 'Nutrition goals and a daily food and water log' },
     { name: 'Reports', description: 'Owner CSV exports and trainer performance' },
-    { name: 'Strava', description: 'Members link Strava; finished workouts are posted as Weight Training activities' },
+    { name: 'Integrations', description: 'Connected fitness services (Strava, more to come): members link them; finished workouts are posted there' },
     { name: 'Files', description: 'Uploaded images, served only within the owning gym' },
     { name: 'Attendance', description: 'Front-desk QR check-in, manual check-in, visit history and daily counts' },
   ],
@@ -209,13 +210,19 @@ module.exports = {
         type: 'object',
         properties: {
           id: { type: 'string' },
-          strava: {
-            type: 'object',
-            description: 'Copy on Strava, when the member connected it',
-            properties: {
-              activityId: { type: 'string', nullable: true, example: '12345678987' },
-              status: { type: 'string', nullable: true, enum: ['uploaded', 'failed'] },
-              error: { type: 'string', nullable: true },
+          exports: {
+            type: 'array',
+            description: 'Copies sent to connected fitness services, one per provider',
+            items: {
+              type: 'object',
+              properties: {
+                provider: { type: 'string', example: 'strava' },
+                status: { type: 'string', enum: ['uploaded', 'failed'] },
+                externalId: { type: 'string', nullable: true, example: '12345678987' },
+                url: { type: 'string', nullable: true, example: 'https://www.strava.com/activities/12345678987' },
+                error: { type: 'string', nullable: true },
+                at: { type: 'string', format: 'date-time' },
+              },
             },
           },
           member: ref('UserRef'),
@@ -1674,27 +1681,37 @@ module.exports = {
         responses: { 200: { description: 'Trainer rows' }, 401: unauthorized, 403: forbidden },
       },
     },
-    '/integrations/strava': {
+    '/integrations': {
       get: {
-        tags: ['Strava'],
-        summary: 'Whether Strava is offered, and your connection',
-        description: 'Needs `workout:log` (members). `available` is false when the server has no Strava app set up.',
+        tags: ['Integrations'],
+        summary: 'Fitness services this server offers, and your connection to each',
+        description: 'Needs `workout:log` (members). Only providers whose keys are set (e.g. STRAVA_CLIENT_ID/SECRET) are listed.',
         responses: {
           200: {
-            description: 'Status',
+            description: 'Providers',
             content: json({
               type: 'object',
               properties: {
-                available: { type: 'boolean' },
-                connection: {
-                  type: 'object',
-                  nullable: true,
-                  properties: {
-                    athleteId: { type: 'string', example: '12345678' },
-                    athleteName: { type: 'string', example: 'Vaishnavi Rao' },
-                    scope: { type: 'string', example: 'read,activity:write' },
-                    expiresAt: { type: 'string', format: 'date-time' },
-                    autoUpload: { type: 'boolean' },
+                integrations: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      provider: { type: 'string', example: 'strava' },
+                      name: { type: 'string', example: 'Strava' },
+                      connection: {
+                        type: 'object',
+                        nullable: true,
+                        properties: {
+                          provider: { type: 'string', example: 'strava' },
+                          externalId: { type: 'string', example: '12345678' },
+                          displayName: { type: 'string', example: 'Vaishnavi Rao' },
+                          scope: { type: 'string', example: 'read,activity:write' },
+                          expiresAt: { type: 'string', format: 'date-time' },
+                          autoUpload: { type: 'boolean' },
+                        },
+                      },
+                    },
                   },
                 },
               },
@@ -1704,41 +1721,48 @@ module.exports = {
           403: forbidden,
         },
       },
+    },
+    '/integrations/{provider}': {
       patch: {
-        tags: ['Strava'],
+        tags: ['Integrations'],
         summary: 'Turn automatic uploads on or off',
+        parameters: [providerParam],
         requestBody: { required: true, content: json({ type: 'object', required: ['autoUpload'], properties: { autoUpload: { type: 'boolean' } } }) },
-        responses: { 200: { description: 'Updated connection' }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Strava is not connected') },
+        responses: { 200: { description: 'Updated connection' }, 400: badRequest, 401: unauthorized, 403: forbidden, 404: errorResponse('Not connected, or unknown provider') },
       },
       delete: {
-        tags: ['Strava'],
-        summary: 'Disconnect Strava',
-        description: 'Revokes FitForge on Strava (best effort) and deletes the stored tokens. Activities already on Strava stay there.',
-        responses: { 204: { description: 'Disconnected' }, 401: unauthorized, 403: forbidden },
+        tags: ['Integrations'],
+        summary: 'Disconnect a fitness service',
+        description: "Revokes FitForge's access on the provider's side (best effort) and deletes the stored tokens. Activities already there stay.",
+        parameters: [providerParam],
+        responses: { 204: { description: 'Disconnected' }, 401: unauthorized, 403: forbidden, 404: errorResponse('Unknown provider') },
       },
     },
-    '/integrations/strava/connect': {
+    '/integrations/{provider}/connect': {
       post: {
-        tags: ['Strava'],
-        summary: 'Start linking Strava',
+        tags: ['Integrations'],
+        summary: "Start linking a fitness service (the provider's own OAuth sign-in)",
         description:
-          'Returns the Strava approval URL to send the browser to, and sets a short-lived `ff_strava_state` cookie that the callback checks, so the link completes only in the browser that started it.',
+          'Returns the provider approval URL to send the browser to, and sets a short-lived `ff_oauth_state` cookie that the callback checks, so the link completes only in the browser that started it. FitForge never sees the member\'s password.',
+        parameters: [providerParam],
         responses: {
           200: { description: 'Approval URL', content: json({ type: 'object', properties: { url: { type: 'string', example: 'https://www.strava.com/oauth/authorize?client_id=…' } } }) },
           401: unauthorized,
           403: forbidden,
-          503: errorResponse('Strava is not set up on this server'),
+          404: errorResponse('Unknown provider'),
+          503: errorResponse('This provider is not set up on this server'),
         },
       },
     },
-    '/integrations/strava/callback': {
+    '/integrations/{provider}/callback': {
       get: {
-        tags: ['Strava'],
-        summary: 'Where Strava returns the browser (not called directly)',
+        tags: ['Integrations'],
+        summary: 'Where the provider returns the browser (not called directly)',
         description:
-          'Exchanges the one-time code for tokens (stored encrypted) and redirects to `/profile?strava=connected`, or `denied`, `expired`, `missing-permission`, `error`, `unavailable`.',
+          'Exchanges the one-time code for tokens (stored encrypted) and redirects to `/profile?integration={provider}&result=connected`, or `denied`, `expired`, `missing-permission`, `error`, `unavailable`.',
         security: [],
         parameters: [
+          providerParam,
           { name: 'code', in: 'query', schema: { type: 'string' } },
           { name: 'scope', in: 'query', schema: { type: 'string' } },
           { name: 'state', in: 'query', schema: { type: 'string' } },
@@ -1747,19 +1771,19 @@ module.exports = {
         responses: { 303: { description: 'Redirect to the profile page with the outcome' } },
       },
     },
-    '/integrations/strava/sessions/{id}': {
+    '/integrations/{provider}/sessions/{id}': {
       post: {
-        tags: ['Strava'],
-        summary: 'Send one of your workouts to Strava',
+        tags: ['Integrations'],
+        summary: 'Send one of your workouts to a connected service',
         description: 'For a workout that was not uploaded automatically (auto-upload off, logged before connecting, or a failed upload). Already-uploaded workouts are returned unchanged.',
-        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        parameters: [providerParam, { name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
-          200: { description: 'The workout with its `strava` status', content: json({ type: 'object', properties: { session: ref('WorkoutSession') } }) },
-          400: errorResponse('Strava is not connected'),
+          200: { description: 'The workout with its `exports`', content: json({ type: 'object', properties: { session: ref('WorkoutSession') } }) },
+          400: errorResponse('Not connected'),
           401: unauthorized,
           403: forbidden,
-          404: errorResponse('Workout not found'),
-          503: errorResponse('Strava is not set up on this server'),
+          404: errorResponse('Workout or provider not found'),
+          503: errorResponse('This provider is not set up on this server'),
         },
       },
     },

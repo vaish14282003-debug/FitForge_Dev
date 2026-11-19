@@ -11,7 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { tourStore } from "@/features/tour/tour-store";
-import { StravaCard } from "@/components/strava/strava-card";
+import { ConnectedAppsCard } from "@/components/integrations/connected-apps-card";
 import { Field, Input, PasswordInput } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { useGym } from "@/hooks/use-gym";
@@ -346,8 +346,8 @@ export default function ProfilePage() {
         </div>
         <div className="space-y-6">
           <DetailsCard key={user.id} user={user} />
-          {/* Strava is for people who log workouts. */}
-          {session.permissions.includes("workout:log") && <StravaCard />}
+          {/* Connected fitness services (Strava…) are for people who log workouts. */}
+          {session.permissions.includes("workout:log") && <ConnectedAppsCard />}
           <PasswordCard />
         </div>
       </div>

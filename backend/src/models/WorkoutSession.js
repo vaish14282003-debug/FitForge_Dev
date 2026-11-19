@@ -38,11 +38,22 @@ const workoutSessionSchema = new mongoose.Schema(
     durationSeconds: { type: Number, required: true, min: 0 },
     entries: { type: [entrySchema], default: [] },
     notes: { type: String, default: '', maxlength: 500 },
-    // Copy on Strava, if the member connected it (services/strava.js).
-    strava: {
-      activityId: { type: String, default: null },
-      status: { type: String, enum: ['uploaded', 'failed', null], default: null },
-      error: { type: String, default: null },
+    // Copies sent to connected fitness services (src/integrations), one entry per provider.
+    exports: {
+      type: [
+        new mongoose.Schema(
+          {
+            provider: { type: String, required: true },
+            status: { type: String, enum: ['uploaded', 'failed'], required: true },
+            externalId: { type: String, default: null },
+            url: { type: String, default: null },
+            error: { type: String, default: null },
+            at: { type: Date, default: Date.now },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
     },
     // Derived when the session is saved.
     totalVolume: { type: Number, default: 0 },

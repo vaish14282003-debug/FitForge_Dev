@@ -58,10 +58,12 @@ Fitness tracking and gym management for members, trainers and gym owners.
   manifest + service worker) and opens without signal using the last copy of your plans. A workout
   finished offline is kept on the phone and uploaded automatically when the connection returns, with
   its real finish time; each workout carries an id, so a retried upload is never saved twice.
-- **Strava**: members link Strava from their profile (official "Connect with Strava" flow, tokens
-  stored encrypted and refreshed automatically). Finished workouts, including ones uploaded later
-  from offline, are posted as Weight Training activities with sets and volume; History shows
-  "View on Strava" or "Send to Strava". Disconnecting revokes access on Strava too.
+- **Connected fitness services** (provider-based, `backend/src/integrations`): members link a service
+  with its own OAuth sign-in (FitForge never sees their password); tokens are stored encrypted and
+  refreshed automatically. Finished workouts, including ones uploaded later from offline, go to
+  every connected service; History shows "View on …" or "Send to …"; disconnecting revokes access.
+  **Strava** is the first provider (Weight Training activities with sets and volume, Strava's official
+  button). Adding another (Garmin, Google Health…) is one provider file: see below.
 - **Welcome tour**: new users get a short guided tour of their own navigation (per role, desktop and
   phone), shown once and remembered on their account; replay it from Profile.
 - **Password reset**: "Forgot password?" emails a single-use link valid for 30 minutes, sent through
@@ -157,6 +159,17 @@ End-to-end tests read `E2E_BASE_URL` (default `http://localhost:3001`) and only 
 many times, so the API's login limit (`AUTH_RATE_LIMIT`, 20 per 15 minutes) may need raising for a
 local run. CI (`.github/workflows/ci.yml`) runs everything on every push, including the browser
 tests against the production Docker images and a throwaway database.
+
+## Adding a fitness service
+
+Each service is one module in `backend/src/integrations/providers/` implementing the contract in
+`backend/src/integrations/registry.js`: `authorizeUrl`, `hasRequiredScope`, `exchangeCode`, `refresh`,
+`uploadWorkout`, `revoke` and `isConfigured` (whether its keys are set). Register it in `registry.js`
+and add its keys to `backend/src/config/env.js`. Everything else is shared: the OAuth round trip
+(`/api/integrations/{provider}/connect` and `/callback`), encrypted token storage and refresh,
+auto-upload after every workout, "Send to …", disconnect, and the Profile card. Brand rules (official
+buttons, required link text) go in `frontend/src/components/integrations/providers.tsx`.
+`backend/tests/integrations.test.js` plugs in a fake provider to check this end to end.
 
 ## Deploying
 

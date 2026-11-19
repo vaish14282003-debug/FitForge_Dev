@@ -5,7 +5,7 @@ const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const { notify } = require('../services/notify');
 const { ROLES, PERMISSIONS, can } = require('../config/roles');
-const stravaService = require('../services/strava');
+const integrations = require('../integrations/service');
 
 const MAX_SESSION_SECONDS = 6 * 60 * 60;
 // Workouts logged offline can be uploaded up to two weeks later.
@@ -116,8 +116,8 @@ async function createSession(req, res) {
     }
     throw err;
   }
-  // Copy to Strava when the member connected it; never fails the save (see services/strava.js).
-  await stravaService.autoUpload(session);
+  // Copy to connected fitness services (Strava…); never fails the save (see src/integrations).
+  await integrations.autoUpload(session);
   res.status(201).json({ session });
 }
 

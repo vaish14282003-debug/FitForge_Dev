@@ -140,12 +140,29 @@ export type WorkoutSession = {
   }[];
   prs: { exercise: string; exerciseName: string; weight: number; reps: number }[];
   review: { reviewedBy: { id: string; name: string } | null; reviewedAt: string | null; comment: string };
-  /** Copy on Strava, if the member connected it. */
-  strava?: { activityId: string | null; status: "uploaded" | "failed" | null; error: string | null };
+  /** Copies sent to connected fitness services (Strava…), one per provider. */
+  exports?: SessionExport[];
 };
 
-export type StravaConnection = { athleteId: string; athleteName: string; scope: string; expiresAt: string; autoUpload: boolean };
-export type StravaStatus = { available: boolean; connection: StravaConnection | null };
+export type SessionExport = {
+  provider: string;
+  status: "uploaded" | "failed";
+  externalId: string | null;
+  url: string | null;
+  error: string | null;
+  at: string;
+};
+
+export type IntegrationConnection = {
+  provider: string;
+  externalId: string;
+  displayName: string;
+  scope: string;
+  expiresAt: string;
+  autoUpload: boolean;
+};
+/** A fitness service this server offers, with the member's connection to it (if any). */
+export type Integration = { provider: string; name: string; connection: IntegrationConnection | null };
 
 export type TrainingSummary = {
   totalWorkouts: number;
