@@ -1,3 +1,5 @@
+import { fetchWithWake } from "./wake";
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -13,7 +15,7 @@ let refreshing: Promise<boolean> | null = null;
 // Single-flight: many requests can 401 at once when the access token expires,
 // but the refresh token is single-use, so only one refresh call may go out.
 function refreshSession() {
-  refreshing ??= fetch("/api/auth/refresh", { method: "POST" })
+  refreshing ??= fetchWithWake("/api/auth/refresh", { method: "POST" })
     .then((res) => res.ok)
     .catch(() => false)
     .finally(() => {
@@ -26,8 +28,8 @@ type Options = { method?: string; body?: unknown };
 
 async function send(path: string, { method = "GET", body }: Options) {
   // File uploads go as multipart; the browser sets that content type with its boundary.
-  if (body instanceof FormData) return fetch(`/api${path}`, { method, body });
-  return fetch(`/api${path}`, {
+  if (body instanceof FormData) return fetchWithWake(`/api${path}`, { method, body });
+  return fetchWithWake(`/api${path}`, {
     method,
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),

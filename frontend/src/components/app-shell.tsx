@@ -68,7 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="grid flex-1 place-items-center p-6 text-center">
         <Backdrop />
         <div className="space-y-4">
-          <p className="text-muted-foreground">We couldn&apos;t reach FitForge. Check your connection and try again.</p>
+          <p className="text-muted-foreground">We couldn&apos;t reach FitForge. Check your internet connection, then try again.</p>
           <Button variant="outline" onClick={() => refetch()}>
             Retry
           </Button>
