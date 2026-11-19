@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
@@ -21,6 +21,9 @@ const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
+
+// Phone browsers tint their address bar with this, matching the app's dark background.
+export const viewport: Viewport = { themeColor: "#0b0707" };
 
 export const metadata: Metadata = {
   title: { default: "FitForge", template: "%s · FitForge" },
