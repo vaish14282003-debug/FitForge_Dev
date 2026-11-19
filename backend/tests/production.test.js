@@ -155,3 +155,23 @@ describe('error reporter', () => {
     expect(JSON.parse(lines[2]).event_id).toBe(event.event_id);
   });
 });
+
+describe('welcome tour', () => {
+  it('is pending for new accounts, and can be completed and replayed', async () => {
+    const { agent, res } = await registerOwner();
+    expect(res.body.user.tourCompletedAt).toBeNull();
+
+    const done = await agent.patch('/api/users/me').send({ tourCompleted: true });
+    expect(done.status).toBe(200);
+    expect(new Date(done.body.user.tourCompletedAt).getTime()).toBeGreaterThan(Date.now() - 60_000);
+    expect((await agent.get('/api/auth/me')).body.user.tourCompletedAt).not.toBeNull();
+
+    const replay = await agent.patch('/api/users/me').send({ tourCompleted: false });
+    expect(replay.body.user.tourCompletedAt).toBeNull();
+  });
+
+  it('rejects a non-boolean value', async () => {
+    const { agent } = await registerOwner();
+    expect((await agent.patch('/api/users/me').send({ tourCompleted: 'yes please' })).status).toBe(400);
+  });
+});

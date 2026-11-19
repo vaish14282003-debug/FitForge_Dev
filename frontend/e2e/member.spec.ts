@@ -34,3 +34,38 @@ test("logging a weigh-in updates progress", async ({ page }) => {
   await expect(page.getByText("Weigh-in saved")).toBeVisible();
   await expect(page.getByText("61.4 kg").first()).toBeVisible();
 });
+
+test("the welcome tour can be replayed from the profile and points at the phone tab bar @mobile", async ({ page, isMobile }) => {
+  await page.goto("/profile");
+  await page.getByRole("button", { name: "Take the tour again" }).click();
+
+  const tour = page.getByRole("dialog");
+  await expect(tour.getByRole("heading", { name: /Welcome to FitForge/ })).toBeVisible();
+  await tour.getByRole("button", { name: "Show me around" }).click();
+  await tour.getByRole("button", { name: "Next" }).click();
+  await expect(tour.getByRole("heading", { name: "Workouts" })).toBeVisible();
+
+  // The card stays on screen, and on phones it sits above the bottom tab bar it points at.
+  // It slides into place, so wait until it stops moving.
+  let previous = -1;
+  await expect
+    .poll(async () => {
+      const y = (await tour.boundingBox())!.y;
+      const settled = Math.abs(y - previous) < 0.5;
+      previous = y;
+      return settled;
+    }, { intervals: [150] })
+    .toBe(true);
+  const box = (await tour.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+  if (isMobile) {
+    const tab = page.locator('nav[aria-label="Main"] >> visible=true').getByRole("link", { name: "Workouts" });
+    expect(box.y + box.height).toBeLessThanOrEqual((await tab.boundingBox())!.y);
+  }
+
+  await page.keyboard.press("Escape");
+  await expect(tour).toBeHidden();
+});

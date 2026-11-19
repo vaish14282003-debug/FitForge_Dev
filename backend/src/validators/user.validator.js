@@ -21,6 +21,8 @@ const updateMe = Joi.object({
   fitnessGoal: Joi.string()
     .valid(...FITNESS_GOALS)
     .allow(null),
+  // true once the welcome tour is finished or skipped; false shows it again.
+  tourCompleted: Joi.boolean(),
 }).min(1);
 
 const changePassword = Joi.object({

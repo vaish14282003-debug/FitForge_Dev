@@ -40,6 +40,8 @@ const userSchema = new mongoose.Schema(
       targetWeight: { type: Number, default: null, min: 20, max: 400 },
     },
     isActive: { type: Boolean, default: true },
+    // When the user finished or skipped the welcome tour; null shows it on their next visit.
+    tourCompletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

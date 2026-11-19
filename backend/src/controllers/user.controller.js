@@ -21,7 +21,9 @@ function manageableRoles(role) {
 }
 
 async function updateMe(req, res) {
-  Object.assign(req.user, req.valid.body);
+  const { tourCompleted, ...profile } = req.valid.body;
+  Object.assign(req.user, profile);
+  if (tourCompleted !== undefined) req.user.tourCompletedAt = tourCompleted ? new Date() : null;
   await req.user.save();
   res.json({ user: await withTrainer(req.user) });
 }

@@ -60,5 +60,23 @@ test("a new gym owner can sign up", async ({ page }) => {
   await page.getByLabel("Gym name").fill("E2E Gym");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/\/owner$/);
+
+  // New accounts get the welcome tour once.
+  const tour = page.getByRole("dialog");
+  await expect(tour.getByRole("heading", { name: "Welcome to FitForge, Test!" })).toBeVisible();
+  await tour.getByRole("button", { name: "Show me around" }).click();
+  await expect(tour.getByRole("heading", { name: "Your gym at a glance" })).toBeVisible();
+  for (let i = 0; i < 12 && (await tour.getByRole("button", { name: "Next" }).isVisible()); i++) {
+    await tour.getByRole("button", { name: "Next" }).click();
+  }
+  await expect(tour.getByRole("heading", { name: "You're all set" })).toBeVisible();
+  await tour.getByRole("button", { name: "Let's go" }).click();
+  await expect(tour).toBeHidden();
+
   await expect(page.getByText("Member join code")).toBeVisible();
+  // Remembered by the server: it doesn't come back.
+  await page.reload();
+  await expect(page.getByText("Member join code")).toBeVisible();
+  await page.waitForTimeout(1500);
+  await expect(page.getByRole("dialog")).toBeHidden();
 });

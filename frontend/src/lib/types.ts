@@ -32,6 +32,8 @@ export type User = {
   dateOfBirth: string | null;
   fitnessGoal: FitnessGoal | null;
   isActive: boolean;
+  /** When the welcome tour was finished or skipped; null means it hasn't been seen yet. */
+  tourCompletedAt: string | null;
   createdAt: string;
 };
 

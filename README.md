@@ -54,6 +54,8 @@ Fitness tracking and gym management for members, trainers and gym owners.
   or staff; trainers message their clients.
 - **Team management**: owners (and staff, for members) edit people and deactivate or reactivate
   accounts. Deactivating signs them out everywhere; a deactivated trainer's clients are unassigned.
+- **Welcome tour**: new users get a short guided tour of their own navigation (per role, desktop and
+  phone), shown once and remembered on their account; replay it from Profile.
 - **Password reset**: "Forgot password?" emails a single-use link valid for 30 minutes, sent through
   Resend (`RESEND_API_KEY`) or SMTP (`SMTP_URL`). Without either (development) the email, link
   included, is printed in the API log.

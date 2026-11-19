@@ -17,4 +17,14 @@ export async function logIn(page: Page, email: string, password = PASSWORD) {
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).not.toHaveURL(/\/login/);
+  await dismissTour(page);
+}
+
+/** Accounts made before the welcome tour existed see it once; close it so tests start on the page. */
+export async function dismissTour(page: Page) {
+  const tour = page.getByRole("dialog", { name: /Welcome to FitForge/ });
+  if (await tour.waitFor({ timeout: 2500 }).then(() => true, () => false)) {
+    await page.keyboard.press("Escape");
+    await expect(tour).toBeHidden();
+  }
 }

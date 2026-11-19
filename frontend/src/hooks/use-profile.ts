@@ -31,6 +31,22 @@ export function useUpdateProfile() {
   });
 }
 
+/**
+ * Records that the welcome tour was finished or skipped. The session is updated straight away, so the
+ * tour stays closed even if the request fails (it would just show again on another device).
+ */
+export function useCompleteTour() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => {
+      queryClient.setQueryData<Session | null>(["session"], (session) =>
+        session ? { ...session, user: { ...session.user, tourCompletedAt: new Date().toISOString() } } : session,
+      );
+      return api<{ user: User }>("/users/me", { method: "PATCH", body: { tourCompleted: true } });
+    },
+  });
+}
+
 export function useUploadAvatar() {
   const apply = useApplyUser();
   return useMutation({

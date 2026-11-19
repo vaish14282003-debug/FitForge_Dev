@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { CalendarDays, ChartLine, ClipboardList, CreditCard, Dumbbell, FolderOpen, History, LayoutDashboard, Library, LogOut, Salad, ScanLine, Users, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { WelcomeTour } from "@/features/tour/welcome-tour";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useLogout, useSession } from "@/hooks/use-session";
@@ -88,6 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const { user } = session;
   const nav = NAV.filter((item) => canVisit(session, item.href) && !item.hide?.(session));
+  const navHrefs = nav.map((item) => item.href).join(" ");
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
@@ -107,6 +109,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={href}
                   aria-current={active ? "page" : undefined}
                   title={label}
+                  data-tour={`nav:${href}`}
                   className={cn(
                     "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition duration-200 xl:px-4",
                     active ? "bg-white text-black" : "text-white/70 hover:bg-white/10 hover:text-white",
@@ -121,9 +124,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-            <NotificationBell />
+            <div data-tour="notifications" className="rounded-full">
+              <NotificationBell />
+            </div>
             <Link
               href="/profile"
+              data-tour="profile"
               aria-label="Your profile"
               className="flex items-center gap-3 rounded-full py-1 pr-1 pl-1 transition hover:bg-white/5 sm:pr-3"
             >
@@ -162,6 +168,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
+              data-tour={`nav:${href}`}
               className={cn(
                 "relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-full px-2 py-2 text-[11px] font-medium transition",
                 active ? "text-white" : "text-white/55",
@@ -180,6 +187,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
+
+      <WelcomeTour session={session} navHrefs={navHrefs} />
     </div>
   );
 }

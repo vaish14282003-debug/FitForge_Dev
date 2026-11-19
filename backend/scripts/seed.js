@@ -46,12 +46,14 @@ async function seed() {
   await loadExerciseLibrary();
 
   const passwordHash = await bcrypt.hash(PASSWORD, 12);
-  const owner = new User({ name: 'Arjun Mehta', email: 'owner@fitforge.dev', role: ROLES.GYM_OWNER, passwordHash });
+  // Demo accounts have already 'seen' the welcome tour, so demos and browser tests start on the dashboard.
+  const tourCompletedAt = new Date();
+  const owner = new User({ name: 'Arjun Mehta', email: 'owner@fitforge.dev', role: ROLES.GYM_OWNER, passwordHash, tourCompletedAt });
   const gym = await Gym.create({ name: 'Iron Temple', owner: owner._id });
   owner.gym = gym._id;
   await owner.save();
 
-  const base = { gym: gym._id, passwordHash };
+  const base = { gym: gym._id, passwordHash, tourCompletedAt };
   const trainer = await User.create({ ...base, name: 'Priya Nair', email: 'trainer@fitforge.dev', role: ROLES.TRAINER });
   await User.create({ ...base, name: 'Rohan Das', email: 'staff@fitforge.dev', role: ROLES.STAFF });
   const member = await User.create({

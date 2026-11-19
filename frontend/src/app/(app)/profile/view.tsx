@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, KeyRound, Trash2, Upload } from "lucide-react";
+import { Camera, Compass, KeyRound, Trash2, Upload } from "lucide-react";
 import { FormError } from "@/components/auth/auth-card";
 import { PageHeader } from "@/components/stat-card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
+import { tourStore } from "@/features/tour/tour-store";
 import { Field, Input, PasswordInput } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { useGym } from "@/hooks/use-gym";
@@ -336,6 +337,10 @@ export default function ProfilePage() {
                 </div>
               ))}
             </dl>
+            <Button variant="outline" size="sm" className="mt-5 w-full" onClick={() => tourStore.start()}>
+              <Compass className="size-4" aria-hidden />
+              Take the tour again
+            </Button>
           </Card>
         </div>
         <div className="space-y-6">
