@@ -5,7 +5,7 @@ services:
     runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free # sleeps after 15 min idle; switch to starter for always-on
     region: singapore
     healthCheckPath: /api/health
     envVars:
