@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { withSnapshot } from "@/lib/offline";
 import type { Equipment, Exercise, MuscleGroup, PlanInput, WorkoutPlan } from "@/lib/types";
 
 export function useExercises(filters: { muscleGroup?: MuscleGroup | null; q?: string } = {}) {
@@ -28,13 +29,17 @@ export function useCreateExercise() {
 }
 
 export function usePlans() {
-  return useQuery({ queryKey: ["plans"], queryFn: () => api<{ plans: WorkoutPlan[] }>("/plans").then((r) => r.plans) });
+  return useQuery({
+    queryKey: ["plans"],
+    // Remembered for offline use: members open their workout from this list.
+    queryFn: () => withSnapshot("plans", () => api<{ plans: WorkoutPlan[] }>("/plans").then((r) => r.plans)),
+  });
 }
 
 export function usePlan(id: string | undefined) {
   return useQuery({
     queryKey: ["plans", id],
-    queryFn: () => api<{ plan: WorkoutPlan }>(`/plans/${id}`).then((r) => r.plan),
+    queryFn: () => withSnapshot(`plan:${id}`, () => api<{ plan: WorkoutPlan }>(`/plans/${id}`).then((r) => r.plan)),
     enabled: !!id,
   });
 }

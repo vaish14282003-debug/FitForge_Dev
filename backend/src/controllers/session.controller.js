@@ -7,6 +7,9 @@ const { notify } = require('../services/notify');
 const { ROLES, PERMISSIONS, can } = require('../config/roles');
 
 const MAX_SESSION_SECONDS = 6 * 60 * 60;
+// Workouts logged offline can be uploaded up to two weeks later.
+const OFFLINE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const isOwnerLevel = (user) => can(user.role, PERMISSIONS.GYM_SETTINGS);
@@ -22,7 +25,13 @@ async function scopeFor(user) {
 }
 
 async function createSession(req, res) {
-  const { planId, dayIndex, startedAt, notes, entries } = req.valid.body;
+  const { planId, dayIndex, startedAt, completedAt: finishedAt, clientId, notes, entries } = req.valid.body;
+
+  // Already uploaded (the connection dropped before the app saw the reply): return that copy.
+  if (clientId) {
+    const existing = await WorkoutSession.findOne({ member: req.user._id, clientId });
+    if (existing) return res.status(200).json({ session: existing });
+  }
 
   const plan = await WorkoutPlan.findOne({ _id: planId, gym: req.user.gym, assignedTo: req.user._id }).populate(
     'days.exercises.exercise',
@@ -37,8 +46,13 @@ async function createSession(req, res) {
     throw ApiError.badRequest('Every exercise must be part of this day');
   }
 
-  const completedAt = new Date();
+  const now = new Date();
   const started = new Date(startedAt);
+  // Offline workouts arrive later with their real finish time. Allow a few minutes of clock
+  // difference between phone and server, but nothing older than the offline window.
+  const completedAt = finishedAt ? new Date(Math.min(new Date(finishedAt).getTime(), now.getTime())) : now;
+  if (finishedAt && new Date(finishedAt) > new Date(now.getTime() + CLOCK_SKEW_MS)) throw ApiError.badRequest('completedAt is in the future');
+  if (now - completedAt > OFFLINE_WINDOW_MS) throw ApiError.badRequest('This workout is too old to upload');
   if (started > completedAt) throw ApiError.badRequest('startedAt is in the future');
   const durationSeconds = Math.min(MAX_SESSION_SECONDS, Math.round((completedAt - started) / 1000));
 
@@ -75,22 +89,32 @@ async function createSession(req, res) {
     };
   });
 
-  const session = await WorkoutSession.create({
-    gym: req.user.gym,
-    member: req.user._id,
-    plan: plan._id,
-    planName: plan.name,
-    dayIndex,
-    dayName: day.name,
-    startedAt: started,
-    completedAt,
-    durationSeconds,
-    entries: sessionEntries,
-    notes,
-    totalVolume,
-    completedSets: doneSets.length,
-    prs,
-  });
+  let session;
+  try {
+    session = await WorkoutSession.create({
+      gym: req.user.gym,
+      member: req.user._id,
+      clientId: clientId ?? null,
+      plan: plan._id,
+      planName: plan.name,
+      dayIndex,
+      dayName: day.name,
+      startedAt: started,
+      completedAt,
+      durationSeconds,
+      entries: sessionEntries,
+      notes,
+      totalVolume,
+      completedSets: doneSets.length,
+      prs,
+    });
+  } catch (err) {
+    // Two copies of the same upload raced; the other one won.
+    if (err.code === 11000 && clientId) {
+      return res.status(200).json({ session: await WorkoutSession.findOne({ member: req.user._id, clientId }) });
+    }
+    throw err;
+  }
   res.status(201).json({ session });
 }
 

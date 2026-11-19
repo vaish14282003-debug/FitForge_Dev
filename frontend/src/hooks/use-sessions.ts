@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { withSnapshot } from "@/lib/offline";
 import type { PreviousSets, SessionInput, TrainingSummary, WorkoutSession } from "@/lib/types";
 
 export function useTrainingSummary() {
@@ -9,7 +10,9 @@ export function useTrainingSummary() {
     queryKey: ["sessions", "summary"],
     // The browser's offset, so "today" and streaks follow the member's own clock.
     queryFn: () =>
-      api<{ summary: TrainingSummary }>(`/sessions/summary?tz=${new Date().getTimezoneOffset()}`).then((r) => r.summary),
+      withSnapshot("training-summary", () =>
+        api<{ summary: TrainingSummary }>(`/sessions/summary?tz=${new Date().getTimezoneOffset()}`).then((r) => r.summary),
+      ),
   });
 }
 
@@ -40,6 +43,8 @@ export function useLogSession() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: SessionInput) => api<{ session: WorkoutSession }>("/sessions", { method: "POST", body }).then((r) => r.session),
+    // Fail straight away without signal (rather than pausing) so the logger can keep it offline.
+    networkMode: "always",
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sessions"] }),
   });
 }

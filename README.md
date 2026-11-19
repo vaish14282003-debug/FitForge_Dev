@@ -54,6 +54,10 @@ Fitness tracking and gym management for members, trainers and gym owners.
   or staff; trainers message their clients.
 - **Team management**: owners (and staff, for members) edit people and deactivate or reactivate
   accounts. Deactivating signs them out everywhere; a deactivated trainer's clients are unassigned.
+- **Offline workouts and installable app**: FitForge installs to a phone's home screen (web app
+  manifest + service worker) and opens without signal using the last copy of your plans. A workout
+  finished offline is kept on the phone and uploaded automatically when the connection returns, with
+  its real finish time; each workout carries an id, so a retried upload is never saved twice.
 - **Welcome tour**: new users get a short guided tour of their own navigation (per role, desktop and
   phone), shown once and remembered on their account; replay it from Profile.
 - **Password reset**: "Forgot password?" emails a single-use link valid for 30 minutes, sent through

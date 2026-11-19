@@ -6,6 +6,11 @@ const createSession = Joi.object({
   planId: objectId.required(),
   dayIndex: Joi.number().integer().min(0).max(6).required(),
   startedAt: Joi.date().iso().required(),
+  // Set by the app when a workout is logged offline and uploaded later: when it really finished.
+  completedAt: Joi.date().iso(),
+  // A random id the app gives each workout, so an upload retried after a dropped connection
+  // returns the workout already saved instead of creating a second copy.
+  clientId: Joi.string().guid({ version: 'uuidv4' }),
   notes: Joi.string().trim().max(500).allow('').default(''),
   entries: Joi.array()
     .items(

@@ -778,6 +778,16 @@ module.exports = {
               planId: { type: 'string' },
               dayIndex: { type: 'integer', example: 0 },
               startedAt: { type: 'string', format: 'date-time' },
+              completedAt: {
+                type: 'string',
+                format: 'date-time',
+                description: 'When the workout finished, for workouts logged offline and uploaded later (up to 14 days). Defaults to now.',
+              },
+              clientId: {
+                type: 'string',
+                format: 'uuid',
+                description: 'A random id from the app. Uploading the same id again returns the saved workout (200) instead of a duplicate.',
+              },
               notes: { type: 'string' },
               entries: {
                 type: 'array',
@@ -792,6 +802,10 @@ module.exports = {
         },
         responses: {
           201: { description: 'Saved', content: json({ type: 'object', properties: { session: ref('WorkoutSession') } }) },
+          200: {
+            description: 'Already saved earlier with this clientId (a retried upload); the existing workout is returned',
+            content: json({ type: 'object', properties: { session: ref('WorkoutSession') } }),
+          },
           400: errorResponse('Validation failed, no completed sets, or exercise not in this day'),
           401: unauthorized,
           403: forbidden,

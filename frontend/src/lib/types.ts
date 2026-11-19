@@ -157,6 +157,10 @@ export type SessionInput = {
   planId: string;
   dayIndex: number;
   startedAt: string;
+  /** When it finished; differs from the upload time for workouts logged offline. */
+  completedAt?: string;
+  /** Random per-workout id, so a retried upload is saved once. */
+  clientId?: string;
   notes: string;
   entries: { exercise: string; sets: LoggedSet[] }[];
 };

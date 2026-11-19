@@ -10,20 +10,24 @@ import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { MuscleIconTile } from "@/components/workouts/exercise-bits";
 import { RestTimer } from "@/components/workouts/rest-timer";
-import { WorkoutComplete } from "@/components/workouts/workout-complete";
+import { WorkoutComplete, WorkoutSavedOffline } from "@/components/workouts/workout-complete";
+import { useSession } from "@/hooks/use-session";
 import { useLogSession, usePreviousSets } from "@/hooks/use-sessions";
+import { enqueueWorkout, isOfflineError } from "@/lib/offline";
 import type { PlanDay, WorkoutPlan, WorkoutSession } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, uuid } from "@/lib/utils";
 import { formatRest } from "@/lib/workout";
 
 type DraftSet = { weight: string; reps: string; done: boolean };
-type Draft = { startedAt: string; notes: string; entries: { exerciseId: string; sets: DraftSet[] }[] };
+// clientId stays with the workout from the start, so every upload attempt uses the same one.
+type Draft = { clientId: string; startedAt: string; notes: string; entries: { exerciseId: string; sets: DraftSet[] }[] };
 
 const storageKey = (planId: string, dayIndex: number) => `ff-workout:${planId}:${dayIndex}`;
 
 // Pre-fills each set from the plan: the lower end of a rep range and the programmed weight.
 function freshDraft(day: PlanDay): Draft {
   return {
+    clientId: uuid(),
     startedAt: new Date().toISOString(),
     notes: "",
     entries: day.exercises.map((e) => ({
@@ -44,7 +48,8 @@ function loadDraft(planId: string, dayIndex: number, day: PlanDay): Draft {
     const sameExercises =
       saved?.entries.length === day.exercises.length &&
       saved.entries.every((entry, i) => entry.exerciseId === day.exercises[i].exercise.id);
-    if (saved && sameExercises) return saved;
+    // Drafts saved before offline sync existed get their id now.
+    if (saved && sameExercises) return { ...saved, clientId: saved.clientId ?? uuid() };
   } catch {
     // Storage unavailable or corrupt: start fresh.
   }
@@ -81,6 +86,8 @@ export function WorkoutLogger({ plan, dayIndex }: { plan: WorkoutPlan; dayIndex:
   const [finishing, setFinishing] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [saved, setSaved] = useState<WorkoutSession | null>(null);
+  const [savedOffline, setSavedOffline] = useState(false);
+  const { data: session } = useSession();
   const logSession = useLogSession();
   const previous = usePreviousSets(day.exercises.map((e) => e.exercise.id));
 
@@ -131,13 +138,22 @@ export function WorkoutLogger({ plan, dayIndex }: { plan: WorkoutPlan; dayIndex:
 
   const skipRest = useCallback(() => setRest(null), []);
 
+  function clearDraft() {
+    try {
+      localStorage.removeItem(storageKey(plan.id, dayIndex));
+    } catch {
+      // Nothing to clean up.
+    }
+  }
+
   function finish() {
-    logSession.mutate(
-      {
-        planId: plan.id,
-        dayIndex,
-        startedAt: draft.startedAt,
-        notes: draft.notes.trim(),
+    const body = {
+      planId: plan.id,
+      dayIndex,
+      clientId: draft.clientId,
+      startedAt: draft.startedAt,
+      completedAt: new Date().toISOString(),
+      notes: draft.notes.trim(),
         entries: draft.entries.map((entry) => ({
           exercise: entry.exerciseId,
           sets: entry.sets.map((s) => ({
@@ -146,21 +162,33 @@ export function WorkoutLogger({ plan, dayIndex }: { plan: WorkoutPlan; dayIndex:
             done: s.done,
           })),
         })),
+    };
+    const done = () => {
+      clearDraft();
+      setFinishing(false);
+      setRest(null);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    logSession.mutate(body, {
+      onSuccess: (result) => {
+        done();
+        setSaved(result);
       },
-      {
-        onSuccess: (session) => {
-          try {
-            localStorage.removeItem(storageKey(plan.id, dayIndex));
-          } catch {
-            // Nothing to clean up.
-          }
-          setFinishing(false);
-          setRest(null);
-          setSaved(session);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        },
+      onError: (err) => {
+        // No signal: keep it on this phone and upload it later (see OfflineSync).
+        if (!isOfflineError(err) || !session) return;
+        enqueueWorkout({
+          id: body.clientId,
+          userId: session.user.id,
+          body,
+          label: `${plan.name} · ${day.name}`,
+          queuedAt: new Date().toISOString(),
+        });
+        logSession.reset();
+        done();
+        setSavedOffline(true);
       },
-    );
+    });
   }
 
   function discard() {
@@ -174,6 +202,7 @@ export function WorkoutLogger({ plan, dayIndex }: { plan: WorkoutPlan; dayIndex:
   }
 
   if (saved) return <WorkoutComplete session={saved} />;
+  if (savedOffline) return <WorkoutSavedOffline />;
 
   const progress = totals.total ? totals.done / totals.total : 0;
 

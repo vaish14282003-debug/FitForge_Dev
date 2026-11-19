@@ -69,3 +69,41 @@ test("the welcome tour can be replayed from the profile and points at the phone 
   await page.keyboard.press("Escape");
   await expect(tour).toBeHidden();
 });
+
+test("a workout finished without signal is kept on the phone and uploaded later", async ({ page, context }) => {
+  test.skip(!writesAllowed, "logs a workout");
+  await page.goto("/workouts");
+  await page.getByRole("link", { name: /^Start (this )?workout$/ }).first().click();
+  await page.getByRole("button", { name: "Mark set 1 done" }).first().click();
+
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Finish", exact: true }).click();
+  await page.getByRole("button", { name: "Save workout" }).click();
+  await expect(page.getByText("Workout saved on this phone")).toBeVisible();
+  await expect(page.getByText("1 workout waiting to upload")).toBeVisible();
+
+  await context.setOffline(false);
+  await expect(page.getByText("Offline workout uploaded")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/waiting to upload/)).toBeHidden();
+});
+
+test("the installed app opens pages without signal @mobile", async ({ page, context }) => {
+  await page.goto("/workouts");
+  const hasWorker = await page.evaluate(async () => {
+    const registration = await Promise.race([
+      navigator.serviceWorker?.ready,
+      new Promise((resolve) => setTimeout(() => resolve(null), 5000)),
+    ]);
+    return !!registration;
+  });
+  test.skip(!hasWorker, "the service worker only runs in production builds");
+  // The first visit installed the worker; this one is served through it and remembered.
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByText("You're offline. Workouts save to this phone.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Start (this )?workout$/ }).first()).toBeVisible();
+  await context.setOffline(false);
+});

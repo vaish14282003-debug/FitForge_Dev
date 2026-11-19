@@ -31,6 +31,8 @@ const workoutSessionSchema = new mongoose.Schema(
     planName: { type: String, required: true },
     dayIndex: { type: Number, required: true, min: 0 },
     dayName: { type: String, required: true },
+    // The app's id for this workout (see the session validator); null for older records.
+    clientId: { type: String, default: null },
     startedAt: { type: Date, required: true },
     completedAt: { type: Date, required: true, index: true },
     durationSeconds: { type: Number, required: true, min: 0 },
@@ -63,6 +65,11 @@ const workoutSessionSchema = new mongoose.Schema(
 );
 
 workoutSessionSchema.index({ member: 1, completedAt: -1 });
+// One workout per app id per member, so retried uploads can't create duplicates.
+workoutSessionSchema.index(
+  { member: 1, clientId: 1 },
+  { unique: true, partialFilterExpression: { clientId: { $type: 'string' } } }
+);
 workoutSessionSchema.index({ member: 1, 'entries.exercise': 1 });
 
 module.exports = mongoose.model('WorkoutSession', workoutSessionSchema);

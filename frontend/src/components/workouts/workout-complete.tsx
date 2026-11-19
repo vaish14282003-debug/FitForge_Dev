@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
-import { Clock, Flame, Layers, Trophy, Weight } from "lucide-react";
+import { Clock, CloudUpload, Flame, Layers, Trophy, Weight } from "lucide-react";
 import { buttonClass } from "@/components/ui/button";
 import { useTrainingSummary } from "@/hooks/use-sessions";
 import type { WorkoutSession } from "@/lib/types";
@@ -130,6 +130,33 @@ export function WorkoutComplete({ session }: { session: WorkoutSession }) {
           See history
         </Link>
       </motion.div>
+    </div>
+  );
+}
+
+/** Shown when a workout finished without signal: it's safe on this phone and uploads by itself. */
+export function WorkoutSavedOffline() {
+  return (
+    <div className="mx-auto max-w-xl py-10 text-center" role="status">
+      <motion.span
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 16 }}
+        className="mx-auto grid size-24 place-items-center rounded-full border border-white/10 bg-white/[0.06]"
+      >
+        <CloudUpload className="size-10 text-accent-text" aria-hidden />
+      </motion.span>
+      <p className="mt-8 text-sm font-semibold text-accent-text">Workout saved on this phone</p>
+      <h1 className="font-display mt-2 text-4xl font-semibold sm:text-5xl">No signal? No problem.</h1>
+      <p className="mt-4 text-muted-foreground">
+        It uploads automatically as soon as you&apos;re back online, with the time you actually finished. Your streak and
+        personal records update then.
+      </p>
+      <div className="mt-10 flex flex-wrap justify-center gap-3">
+        <Link href="/member" className={buttonClass({ size: "lg" })}>
+          Back to dashboard
+        </Link>
+      </div>
     </div>
   );
 }

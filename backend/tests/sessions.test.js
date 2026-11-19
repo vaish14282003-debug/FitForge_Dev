@@ -161,3 +161,58 @@ describe('join code rotation', () => {
     expect(await WorkoutSession.countDocuments()).toBe(0);
   });
 });
+
+describe('workouts logged offline', () => {
+  const clientId = '3f2b8c1e-7a4d-4e9b-9c2a-1d5e6f7a8b9c';
+
+  it('saves a retried upload only once', async () => {
+    const first = await client.agent.post('/api/sessions').send(benchSession(50, { clientId }));
+    expect(first.status).toBe(201);
+
+    const retry = await client.agent.post('/api/sessions').send(benchSession(50, { clientId }));
+    expect(retry.status).toBe(200);
+    expect(retry.body.session.id).toBe(first.body.session.id);
+    expect(await WorkoutSession.countDocuments({ member: client.user.id })).toBe(1);
+  });
+
+  it('treats the same id from two members as two workouts', async () => {
+    await registerMemberWithPlan();
+    expect((await client.agent.post('/api/sessions').send(benchSession(50, { clientId }))).status).toBe(201);
+    expect((await stranger.agent.post('/api/sessions').send(benchSession(50, { clientId }))).status).toBe(201);
+  });
+
+  it('keeps the real finish time of a workout uploaded later', async () => {
+    const startedAt = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    const completedAt = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const res = await client.agent
+      .post('/api/sessions')
+      .send(benchSession(50, { clientId, startedAt: startedAt.toISOString(), completedAt: completedAt.toISOString() }));
+    expect(res.status).toBe(201);
+    expect(new Date(res.body.session.completedAt).getTime()).toBe(completedAt.getTime());
+    expect(res.body.session.durationSeconds).toBe(3600);
+  });
+
+  it('rejects finish times in the future or older than two weeks, and malformed ids', async () => {
+    const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    expect((await client.agent.post('/api/sessions').send(benchSession(50, { completedAt: future }))).status).toBe(400);
+
+    const old = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const tooOld = benchSession(50, { startedAt: new Date(old.getTime() - 3600_000).toISOString(), completedAt: old.toISOString() });
+    expect((await client.agent.post('/api/sessions').send(tooOld)).status).toBe(400);
+
+    expect((await client.agent.post('/api/sessions').send(benchSession(50, { clientId: 'not-a-uuid' }))).status).toBe(400);
+  });
+
+  it('allows a few minutes of clock difference between phone and server', async () => {
+    const slightlyAhead = new Date(Date.now() + 60 * 1000).toISOString();
+    const res = await client.agent.post('/api/sessions').send(benchSession(50, { completedAt: slightlyAhead }));
+    expect(res.status).toBe(201);
+    expect(new Date(res.body.session.completedAt).getTime()).toBeLessThanOrEqual(Date.now());
+  });
+});
+
+// The stranger joins the same plan so both members can log the same day.
+async function registerMemberWithPlan() {
+  await owner.agent.patch(`/api/users/${stranger.user.id}/trainer`).send({ trainerId: trainer.user.id });
+  await trainer.agent.put(`/api/plans/${plan.id}/assignees`).send({ memberIds: [client.user.id, stranger.user.id] });
+}

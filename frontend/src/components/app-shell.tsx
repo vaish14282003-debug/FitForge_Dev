@@ -8,6 +8,7 @@ import { CalendarDays, ChartLine, ClipboardList, CreditCard, Dumbbell, FolderOpe
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { WelcomeTour } from "@/features/tour/welcome-tour";
+import { OfflineSync } from "@/components/offline-sync";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useLogout, useSession } from "@/hooks/use-session";
@@ -189,6 +190,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
 
       <WelcomeTour session={session} navHrefs={navHrefs} />
+      <OfflineSync userId={user.id} />
     </div>
   );
 }

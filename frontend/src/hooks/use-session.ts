@@ -2,13 +2,16 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
+import { clearOfflinePages } from "@/components/service-worker";
+import { clearSnapshots, withSnapshot } from "@/lib/offline";
 import type { Session } from "@/lib/types";
 
 const SESSION_KEY = ["session"];
 
 async function fetchSession(): Promise<Session | null> {
   try {
-    return await api<Session>("/auth/me");
+    // Without a connection (gym basements), the last known session keeps the app usable offline.
+    return await withSnapshot("session", () => api<Session>("/auth/me"));
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) return null;
     throw err;
@@ -48,6 +51,8 @@ export function useLogout() {
     mutationFn: () => api<void>("/auth/logout", { method: "POST" }),
     // Drop everything cached for the previous user, not just the session.
     onSuccess: () => {
+      clearSnapshots();
+      clearOfflinePages();
       queryClient.clear();
       queryClient.setQueryData(SESSION_KEY, null);
     },
