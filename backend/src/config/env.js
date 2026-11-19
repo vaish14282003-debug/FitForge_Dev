@@ -34,9 +34,14 @@ const schema = Joi.object({
   AWS_SECRET_ACCESS_KEY: Joi.string().allow(''),
 }).unknown();
 
-const { value, error } = schema.validate(process.env, { abortEarly: false });
+const { cleanMongoUri, explainMongoUri } = require('./mongoUri');
+
+const input = { ...process.env, MONGO_URI: cleanMongoUri(process.env.MONGO_URI) };
+const { value, error } = schema.validate(input, { abortEarly: false });
 if (error) {
-  throw new Error(`Invalid environment configuration: ${error.details.map((d) => d.message).join(', ')}`);
+  // Joi's message for a bad MONGO_URI is vague; replace it with a specific, password-free one.
+  const messages = error.details.map((d) => (d.path[0] === 'MONGO_URI' && input.MONGO_URI ? explainMongoUri(input.MONGO_URI) : d.message));
+  throw new Error(`Invalid environment configuration: ${messages.join(', ')}`);
 }
 
 const config = {
